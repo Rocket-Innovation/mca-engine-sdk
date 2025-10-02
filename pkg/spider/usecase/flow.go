@@ -34,9 +34,12 @@ type UpdateFlowRequest struct {
 	TenantID    string                 `json:"tenant_id"`
 	FlowID      string                 `json:"flow_id"`
 	Name        string                 `json:"name"`
+	Description string                 `json:"description,omitempty"`
 	TriggerType spider.FlowTriggerType `json:"trigger_type"`
 	Meta        map[string]string      `json:"meta,omitempty"`
 	Status      spider.FlowStatus      `json:"status"`
+	Actions     []WorkflowActionInput  `json:"actions,omitempty"`
+	Peers       []PeerInput            `json:"peers,omitempty"`
 }
 
 type FlowResponse struct {
@@ -132,6 +135,7 @@ func (u *Usecase) GetFlow(ctx context.Context, tenantID, flowID string) (*FlowDe
 }
 
 func (u *Usecase) UpdateFlow(ctx context.Context, req *UpdateFlowRequest) (*spider.Flow, error) {
+	// Update flow metadata
 	storageReq := &spider.UpdateFlowRequest{
 		TenantID:    req.TenantID,
 		FlowID:      req.FlowID,
@@ -140,7 +144,49 @@ func (u *Usecase) UpdateFlow(ctx context.Context, req *UpdateFlowRequest) (*spid
 		Meta:        req.Meta,
 		Status:      req.Status,
 	}
-	return u.storage.UpdateFlow(ctx, storageReq)
+
+	flow, err := u.storage.UpdateFlow(ctx, storageReq)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update actions if provided
+	if len(req.Actions) > 0 {
+		for _, action := range req.Actions {
+			_, err = u.storage.UpdateAction(ctx, &spider.UpdateActionRequest{
+				TenantID:   req.TenantID,
+				WorkflowID: req.FlowID,
+				Key:        action.Key,
+				Config:     action.Config,
+				Map:        action.Mapper,
+				Meta:       action.Meta,
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	// Update peers if provided
+	// Note: This requires deleting existing dependencies and recreating them
+	// You may want to implement a more sophisticated merge strategy
+	if len(req.Peers) > 0 {
+		for _, peer := range req.Peers {
+			err = u.storage.AddDep(
+				ctx,
+				req.TenantID,
+				req.FlowID,
+				peer.ParentKey,
+				peer.MetaOutput,
+				peer.ChildKey,
+			)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return flow, nil
 }
 
 func (u *Usecase) DeleteFlow(ctx context.Context, tenantID, flowID string) error {

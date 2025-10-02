@@ -191,9 +191,12 @@ func (h *Handler) UpdateFlow(c *fiber.Ctx) error {
 
 	var payload struct {
 		Name        string                    `json:"name"`
+		Description string                    `json:"description,omitempty"`
 		TriggerType spider.FlowTriggerType   `json:"trigger_type"`
 		Meta        map[string]string         `json:"meta,omitempty"`
 		Status      spider.FlowStatus         `json:"status"`
+		Actions     []WorkflowAction          `json:"actions,omitempty"`
+		Peers       []Peer                    `json:"peers,omitempty"`
 	}
 
 	err := c.BodyParser(&payload)
@@ -207,13 +210,38 @@ func (h *Handler) UpdateFlow(c *fiber.Ctx) error {
 		})
 	}
 
+	// Convert actions to usecase types
+	actions := make([]usecase.WorkflowActionInput, len(payload.Actions))
+	for i, action := range payload.Actions {
+		actions[i] = usecase.WorkflowActionInput{
+			Key:      action.Key,
+			ActionID: action.ActionID,
+			Config:   action.Config,
+			Mapper:   action.Mapper,
+			Meta:     action.Meta,
+		}
+	}
+
+	// Convert peers to usecase types
+	peers := make([]usecase.PeerInput, len(payload.Peers))
+	for i, peer := range payload.Peers {
+		peers[i] = usecase.PeerInput{
+			ParentKey:  peer.ParentKey,
+			MetaOutput: peer.MetaOutput,
+			ChildKey:   peer.ChildKey,
+		}
+	}
+
 	req := &usecase.UpdateFlowRequest{
 		TenantID:    tenantID,
 		FlowID:      flowID,
 		Name:        payload.Name,
+		Description: payload.Description,
 		TriggerType: payload.TriggerType,
 		Meta:        payload.Meta,
 		Status:      payload.Status,
+		Actions:     actions,
+		Peers:       peers,
 	}
 
 	flow, err := h.usecase.UpdateFlow(c.Context(), req)

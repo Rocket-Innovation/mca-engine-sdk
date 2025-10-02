@@ -41,9 +41,12 @@ type CreateFlowPayload struct {
 // UpdateFlowPayload represents the request body for updating a flow
 type UpdateFlowPayload struct {
 	Name        string                 `json:"name" example:"Updated Workflow"`
+	Description string                 `json:"description,omitempty" example:"Updated workflow description"`
 	TriggerType spider.FlowTriggerType `json:"trigger_type" example:"schedule"`
 	Meta        map[string]string      `json:"meta,omitempty"`
 	Status      spider.FlowStatus      `json:"status" example:"active"`
+	Actions     []WorkflowAction       `json:"actions,omitempty"`
+	Peers       []Peer                 `json:"peers,omitempty"`
 }
 
 // UpdateActionPayload represents the request body for updating an action
