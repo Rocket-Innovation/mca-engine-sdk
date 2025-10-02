@@ -679,16 +679,6 @@ const docTemplate = `{
         "pkg_spider_apis.UpdateFlowPayload": {
             "type": "object",
             "properties": {
-                "actions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/pkg_spider_apis.WorkflowAction"
-                    }
-                },
-                "description": {
-                    "type": "string",
-                    "example": "Updated workflow description"
-                },
                 "meta": {
                     "type": "object",
                     "additionalProperties": {
@@ -698,12 +688,6 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "Updated Workflow"
-                },
-                "peers": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/pkg_spider_apis.Peer"
-                    }
                 },
                 "status": {
                     "type": "string",

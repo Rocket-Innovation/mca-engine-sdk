@@ -152,13 +152,6 @@ definitions:
     type: object
   pkg_spider_apis.UpdateFlowPayload:
     properties:
-      actions:
-        items:
-          $ref: '#/definitions/pkg_spider_apis.WorkflowAction'
-        type: array
-      description:
-        example: Updated workflow description
-        type: string
       meta:
         additionalProperties:
           type: string
@@ -166,10 +159,6 @@ definitions:
       name:
         example: Updated Workflow
         type: string
-      peers:
-        items:
-          $ref: '#/definitions/pkg_spider_apis.Peer'
-        type: array
       status:
         example: active
         type: string
