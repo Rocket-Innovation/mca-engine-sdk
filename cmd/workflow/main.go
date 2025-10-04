@@ -63,7 +63,6 @@ func main() {
 
 	// actions
 	app.Post("/tenants/:tenant_id/workflows/:workflow_id/actions/:key/disable", handler.DisableAction)
-	app.Put("/tenants/:tenant_id/workflows/:workflow_id/actions/:key", handler.UpdateAction)
 
 	go worflow.Run(ctx)
 

@@ -1,9 +1,10 @@
 package apis
 
 import (
+	"github.com/gofiber/fiber/v2"
+	"github.com/samber/lo"
 	"github.com/targc/spider-go/pkg/spider"
 	"github.com/targc/spider-go/pkg/spider/usecase"
-	"github.com/gofiber/fiber/v2"
 )
 
 // CreateFlow godoc
@@ -27,11 +28,11 @@ func (h *Handler) CreateFlow(c *fiber.Ctx) error {
 	}
 
 	var payload struct {
-		Name        string                    `json:"name"`
-		TriggerType spider.FlowTriggerType   `json:"trigger_type"`
-		Meta        map[string]string         `json:"meta,omitempty"`
-		Actions     []WorkflowAction          `json:"actions"`
-		Peers       []Peer                    `json:"peers"`
+		Name        string                 `json:"name"`
+		TriggerType spider.FlowTriggerType `json:"trigger_type"`
+		Meta        map[string]string      `json:"meta,omitempty"`
+		Actions     []WorkflowAction       `json:"actions"`
+		Peers       []Peer                 `json:"peers"`
 	}
 
 	err := c.BodyParser(&payload)
@@ -190,10 +191,12 @@ func (h *Handler) UpdateFlow(c *fiber.Ctx) error {
 	}
 
 	var payload struct {
-		Name        string                    `json:"name"`
-		TriggerType spider.FlowTriggerType   `json:"trigger_type"`
-		Meta        map[string]string         `json:"meta,omitempty"`
-		Status      spider.FlowStatus         `json:"status"`
+		Name        string                 `json:"name"`
+		TriggerType spider.FlowTriggerType `json:"trigger_type"`
+		Meta        map[string]string      `json:"meta,omitempty"`
+		Status      spider.FlowStatus      `json:"status"`
+		Actions     []WorkflowAction       `json:"actions"`
+		Peers       []Peer                 `json:"peers"`
 	}
 
 	err := c.BodyParser(&payload)
@@ -214,6 +217,22 @@ func (h *Handler) UpdateFlow(c *fiber.Ctx) error {
 		TriggerType: payload.TriggerType,
 		Meta:        payload.Meta,
 		Status:      payload.Status,
+		Actions: lo.Map(payload.Actions, func(action WorkflowAction, _ int) usecase.WorkflowActionInput {
+			return usecase.WorkflowActionInput{
+				Key:      action.Key,
+				ActionID: action.ActionID,
+				Config:   action.Config,
+				Mapper:   action.Mapper,
+				Meta:     action.Meta,
+			}
+		}),
+		Peers: lo.Map(payload.Peers, func(peer Peer, _ int) usecase.PeerInput {
+			return usecase.PeerInput{
+				ParentKey:  peer.ParentKey,
+				MetaOutput: peer.MetaOutput,
+				ChildKey:   peer.ChildKey,
+			}
+		}),
 	}
 
 	flow, err := h.usecase.UpdateFlow(c.Context(), req)

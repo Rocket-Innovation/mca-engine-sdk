@@ -405,6 +405,72 @@ func (w *MongodDBWorkflowStorageAdapter) DisableWorkflowAction(ctx context.Conte
 	return nil
 }
 
+func (w *MongodDBWorkflowStorageAdapter) DeleteAction(ctx context.Context, tenantID, workflowID, key string) error {
+	_, err := w.workflowActionCollection.DeleteOne(
+		ctx,
+		bson.D{
+			{Key: "tenant_id", Value: tenantID},
+			{Key: "workflow_id", Value: workflowID},
+			{Key: "key", Value: key},
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	// Increment flow version when action is deleted
+	err = w.incrementFlowVersion(ctx, tenantID, workflowID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (w *MongodDBWorkflowStorageAdapter) DeleteAllActions(ctx context.Context, tenantID, workflowID string) error {
+	_, err := w.workflowActionCollection.DeleteMany(
+		ctx,
+		bson.D{
+			{Key: "tenant_id", Value: tenantID},
+			{Key: "workflow_id", Value: workflowID},
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	// Increment flow version when all actions are deleted
+	err = w.incrementFlowVersion(ctx, tenantID, workflowID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (w *MongodDBWorkflowStorageAdapter) DeleteAllDeps(ctx context.Context, tenantID, workflowID string) error {
+	_, err := w.workflowActionDepCollection.DeleteMany(
+		ctx,
+		bson.D{
+			{Key: "workflow_id", Value: workflowID},
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	// Increment flow version when dependencies are deleted
+	err = w.incrementFlowVersion(ctx, tenantID, workflowID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (w *MongodDBWorkflowStorageAdapter) ListFlows(ctx context.Context, tenantID string, page, pageSize int) (*FlowListResponse, error) {
 
 	skip := (page - 1) * pageSize

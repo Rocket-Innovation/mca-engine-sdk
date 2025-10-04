@@ -3,8 +3,8 @@ package usecase
 import (
 	"context"
 
-	"github.com/targc/spider-go/pkg/spider"
 	"github.com/google/uuid"
+	"github.com/targc/spider-go/pkg/spider"
 )
 
 type CreateFlowRequest struct {
@@ -37,6 +37,8 @@ type UpdateFlowRequest struct {
 	TriggerType spider.FlowTriggerType `json:"trigger_type"`
 	Meta        map[string]string      `json:"meta,omitempty"`
 	Status      spider.FlowStatus      `json:"status"`
+	Actions     []WorkflowActionInput  `json:"actions,omitempty"`
+	Peers       []PeerInput            `json:"peers,omitempty"`
 }
 
 type FlowResponse struct {
@@ -140,7 +142,58 @@ func (u *Usecase) UpdateFlow(ctx context.Context, req *UpdateFlowRequest) (*spid
 		Meta:        req.Meta,
 		Status:      req.Status,
 	}
-	return u.storage.UpdateFlow(ctx, storageReq)
+
+	flow, err := u.storage.UpdateFlow(ctx, storageReq)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.Actions != nil {
+		err = u.storage.DeleteAllActions(ctx, req.TenantID, req.FlowID)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, action := range req.Actions {
+			_, err = u.storage.AddAction(ctx, &spider.AddActionRequest{
+				TenantID:   req.TenantID,
+				WorkflowID: req.FlowID,
+				Key:        action.Key,
+				ActionID:   action.ActionID,
+				Config:     action.Config,
+				Map:        action.Mapper,
+				Meta:       action.Meta,
+			})
+
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if req.Peers != nil {
+		err = u.storage.DeleteAllDeps(ctx, req.TenantID, req.FlowID)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, peer := range req.Peers {
+			err = u.storage.AddDep(
+				ctx,
+				req.TenantID,
+				req.FlowID,
+				peer.ParentKey,
+				peer.MetaOutput,
+				peer.ChildKey,
+			)
+
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return flow, nil
 }
 
 func (u *Usecase) DeleteFlow(ctx context.Context, tenantID, flowID string) error {
