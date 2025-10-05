@@ -21,10 +21,10 @@ import (
 	"os"
 	"os/signal"
 
-	_ "github.com/targc/spider-go/cmd/workflow/docs"
-	"github.com/targc/spider-go/pkg/spider"
-	"github.com/targc/spider-go/pkg/spider/apis"
-	"github.com/targc/spider-go/pkg/spider/usecase"
+	_ "github.com/Rocket-Innovation/spider-go/cmd/workflow/docs"
+	"github.com/Rocket-Innovation/spider-go/pkg/spider"
+	"github.com/Rocket-Innovation/spider-go/pkg/spider/apis"
+	"github.com/Rocket-Innovation/spider-go/pkg/spider/usecase"
 
 	"github.com/gofiber/fiber/v2"
 	fiberSwagger "github.com/swaggo/fiber-swagger"

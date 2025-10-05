@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"log/slog"
 
+	"github.com/Rocket-Innovation/spider-go/pkg/spider"
 	"github.com/gofiber/fiber/v2"
-	"github.com/targc/spider-go/pkg/spider"
 )
 
 func main() {

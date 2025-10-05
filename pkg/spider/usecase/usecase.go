@@ -1,7 +1,7 @@
 package usecase
 
 import (
-	"github.com/targc/spider-go/pkg/spider"
+	"github.com/Rocket-Innovation/spider-go/pkg/spider"
 )
 
 type Usecase struct {

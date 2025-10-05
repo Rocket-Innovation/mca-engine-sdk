@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"github.com/targc/spider-go/pkg/spider"
 	"log/slog"
 	"os"
 	"os/signal"
+
+	"github.com/Rocket-Innovation/spider-go/pkg/spider"
 
 	"github.com/gofiber/fiber/v2"
 )

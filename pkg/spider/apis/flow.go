@@ -1,10 +1,10 @@
 package apis
 
 import (
+	"github.com/Rocket-Innovation/spider-go/pkg/spider"
+	"github.com/Rocket-Innovation/spider-go/pkg/spider/usecase"
 	"github.com/gofiber/fiber/v2"
 	"github.com/samber/lo"
-	"github.com/targc/spider-go/pkg/spider"
-	"github.com/targc/spider-go/pkg/spider/usecase"
 )
 
 // CreateFlow godoc

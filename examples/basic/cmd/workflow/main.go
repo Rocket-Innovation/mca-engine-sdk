@@ -2,9 +2,10 @@ package main
 
 import (
 	"context"
-	"github.com/targc/spider-go/pkg/spider"
 	"os"
 	"os/signal"
+
+	"github.com/Rocket-Innovation/spider-go/pkg/spider"
 )
 
 func main() {

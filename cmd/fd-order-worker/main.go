@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/targc/spider-go/pkg/spider"
+	"github.com/Rocket-Innovation/spider-go/pkg/spider"
 )
 
 const actionID = "fd-order-action"

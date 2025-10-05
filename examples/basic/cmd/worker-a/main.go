@@ -6,7 +6,8 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
-	"github.com/targc/spider-go/pkg/spider"
+
+	"github.com/Rocket-Innovation/spider-go/pkg/spider"
 
 	"github.com/gofiber/fiber/v2"
 )

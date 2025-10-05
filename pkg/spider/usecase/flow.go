@@ -3,8 +3,8 @@ package usecase
 import (
 	"context"
 
+	"github.com/Rocket-Innovation/spider-go/pkg/spider"
 	"github.com/google/uuid"
-	"github.com/targc/spider-go/pkg/spider"
 )
 
 type CreateFlowRequest struct {
