@@ -21,10 +21,10 @@ import (
 	"os"
 	"os/signal"
 
-	_ "github.com/Rocket-Innovation/spider-go/cmd/workflow/docs"
-	"github.com/Rocket-Innovation/spider-go/pkg/spider"
-	"github.com/Rocket-Innovation/spider-go/pkg/spider/apis"
-	"github.com/Rocket-Innovation/spider-go/pkg/spider/usecase"
+	_ "github.com/Rocket-Innovation/mca-engine-sdk/cmd/workflow/docs"
+	"github.com/Rocket-Innovation/mca-engine-sdk/pkg/spider"
+	"github.com/Rocket-Innovation/mca-engine-sdk/pkg/spider/apis"
+	"github.com/Rocket-Innovation/mca-engine-sdk/pkg/spider/usecase"
 
 	"github.com/gofiber/fiber/v2"
 	fiberSwagger "github.com/swaggo/fiber-swagger"

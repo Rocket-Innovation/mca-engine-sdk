@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/Rocket-Innovation/spider-go/pkg/spider"
+	"github.com/Rocket-Innovation/mca-engine-sdk/pkg/spider"
 
 	"github.com/go-co-op/gocron/v2"
 	"github.com/gofiber/fiber/v2"

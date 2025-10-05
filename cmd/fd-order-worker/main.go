@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/Rocket-Innovation/spider-go/pkg/spider"
+	"github.com/Rocket-Innovation/mca-engine-sdk/pkg/spider"
 )
 
 const actionID = "fd-order-action"

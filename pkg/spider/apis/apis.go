@@ -1,8 +1,8 @@
 package apis
 
 import (
-	"github.com/Rocket-Innovation/spider-go/pkg/spider"
-	"github.com/Rocket-Innovation/spider-go/pkg/spider/usecase"
+	"github.com/Rocket-Innovation/mca-engine-sdk/pkg/spider"
+	"github.com/Rocket-Innovation/mca-engine-sdk/pkg/spider/usecase"
 )
 
 type Handler struct {

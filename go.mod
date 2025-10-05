@@ -1,4 +1,4 @@
-module github.com/Rocket-Innovation/spider-go
+module github.com/Rocket-Innovation/mca-engine-sdk
 
 go 1.24.0
 

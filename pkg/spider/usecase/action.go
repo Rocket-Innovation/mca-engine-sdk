@@ -3,7 +3,7 @@ package usecase
 import (
 	"context"
 
-	"github.com/Rocket-Innovation/spider-go/pkg/spider"
+	"github.com/Rocket-Innovation/mca-engine-sdk/pkg/spider"
 )
 
 func (u *Usecase) DisableAction(ctx context.Context, tenantID, workflowID, key string) error {

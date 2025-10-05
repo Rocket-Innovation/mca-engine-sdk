@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/Rocket-Innovation/spider-go/pkg/spider"
+	"github.com/Rocket-Innovation/mca-engine-sdk/pkg/spider"
 
 	"github.com/sethvargo/go-envconfig"
 	"github.com/slack-go/slack"
