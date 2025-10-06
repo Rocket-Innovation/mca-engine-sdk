@@ -108,11 +108,15 @@ func (u *Usecase) ListFlows(ctx context.Context, tenantID string, page, pageSize
 }
 
 type FlowDetailResponse struct {
-	FlowID   string                  `json:"flow_id"`
-	FlowName string                  `json:"flow_name"`
-	TenantID string                  `json:"tenant_id"`
-	Actions  []spider.WorkflowAction `json:"actions"`
-	Peers    []PeerOutput            `json:"peers"`
+	FlowID      string                  `json:"flow_id"`
+	FlowName    string                  `json:"flow_name"`
+	TenantID    string                  `json:"tenant_id"`
+	TriggerType spider.FlowTriggerType  `json:"trigger_type"`
+	Status      spider.FlowStatus       `json:"status"`
+	Version     uint64                  `json:"version"`
+	Meta        map[string]string       `json:"meta,omitempty"`
+	Actions     []spider.WorkflowAction `json:"actions"`
+	Peers       []PeerOutput            `json:"peers"`
 }
 
 type PeerOutput struct {
@@ -148,11 +152,15 @@ func (u *Usecase) GetFlow(ctx context.Context, tenantID, flowID string) (*FlowDe
 	}
 
 	return &FlowDetailResponse{
-		FlowID:   flowID,
-		FlowName: flow.Name,
-		TenantID: tenantID,
-		Actions:  actions,
-		Peers:    peerOutputs,
+		FlowID:      flowID,
+		FlowName:    flow.Name,
+		TenantID:    tenantID,
+		TriggerType: flow.TriggerType,
+		Status:      flow.Status,
+		Version:     flow.Version,
+		Meta:        flow.Meta,
+		Actions:     actions,
+		Peers:       peerOutputs,
 	}, nil
 }
 
