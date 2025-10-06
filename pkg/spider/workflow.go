@@ -358,6 +358,8 @@ func ex(env map[string]map[string]interface{}, mapping map[string]Mapper) (map[s
 		env = map[string]map[string]interface{}{}
 	}
 
+	env["null"] = nil
+
 	env["builtin"] = map[string]interface{}{
 		"string": func(value any) string { return fmt.Sprint(value) },
 	}
