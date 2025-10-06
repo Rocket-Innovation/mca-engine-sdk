@@ -158,7 +158,7 @@ func (w *Workflow) listenTriggerMessages(ctx context.Context) error {
 				nextInput, err := ex(nextContextVal, dep.Map)
 
 				if err != nil {
-					slog.Error("marshal next input failed", slog.Any("error", err.Error()))
+					slog.Error("process expression failed", slog.Any("error", err.Error()))
 					return err
 				}
 
