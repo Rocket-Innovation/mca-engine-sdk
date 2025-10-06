@@ -276,6 +276,8 @@ func (m *NATSWorkflowMessengerAdapter) SendInputMessage(ctx context.Context, mes
 		return err
 	}
 
+	slog.Info("produce", slog.Any("b", string(b)))
+
 	err = m.p.Produce(ctx, subject, b)
 
 	if err != nil {
