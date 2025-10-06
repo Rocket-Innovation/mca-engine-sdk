@@ -162,12 +162,16 @@ func (w *Workflow) listenTriggerMessages(ctx context.Context) error {
 					return err
 				}
 
+				slog.Info("after process expression", slog.Any("nextInput", nextInput))
+
 				nextInputb, err := json.Marshal(nextInput)
 
 				if err != nil {
 					slog.Error("marshal next input failed", slog.Any("error", err.Error()))
 					return err
 				}
+
+				slog.Info("after marshall next input", slog.Any("nextInputb", string(nextInputb)))
 
 				err = w.messenger.SendInputMessage(ctx, InputMessage{
 					SessionID:  sessionID,
