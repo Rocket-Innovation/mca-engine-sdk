@@ -68,6 +68,12 @@ type UpdateFlowRequest struct {
 	Status      FlowStatus        `json:"status"`
 }
 
+type WorkflowPeer struct {
+	ParentKey  string `json:"parent_key"`
+	MetaOutput string `json:"meta_output"`
+	ChildKey   string `json:"child_key"`
+}
+
 type WorkflowStorageAdapter interface {
 	QueryWorkflowAction(ctx context.Context, tenantID, workflowID, key string) (*WorkflowAction, error)
 	QueryWorkflowActionDependencies(ctx context.Context, tenantID, workflowID, key, metaOutput string) ([]WorkflowAction, error)
@@ -82,6 +88,7 @@ type WorkflowStorageAdapter interface {
 	DisableWorkflowAction(ctx context.Context, tenantID, workflowID, key string) error
 	ListFlows(ctx context.Context, tenantID string, page, pageSize int) (*FlowListResponse, error)
 	GetWorkflowActions(ctx context.Context, tenantID, workflowID string) ([]WorkflowAction, error)
+	GetWorkflowPeers(ctx context.Context, tenantID, workflowID string) ([]WorkflowPeer, error)
 	UpdateAction(ctx context.Context, req *UpdateActionRequest) (*WorkflowAction, error)
 	CreateFlow(ctx context.Context, req *CreateFlowRequest) (*Flow, error)
 	GetFlow(ctx context.Context, tenantID, flowID string) (*Flow, error)

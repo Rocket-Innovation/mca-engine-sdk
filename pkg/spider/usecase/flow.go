@@ -112,6 +112,13 @@ type FlowDetailResponse struct {
 	FlowName string                  `json:"flow_name"`
 	TenantID string                  `json:"tenant_id"`
 	Actions  []spider.WorkflowAction `json:"actions"`
+	Peers    []PeerOutput            `json:"peers"`
+}
+
+type PeerOutput struct {
+	ParentKey  string `json:"parent_key"`
+	MetaOutput string `json:"meta_output"`
+	ChildKey   string `json:"child_key"`
 }
 
 func (u *Usecase) GetFlow(ctx context.Context, tenantID, flowID string) (*FlowDetailResponse, error) {
@@ -125,11 +132,27 @@ func (u *Usecase) GetFlow(ctx context.Context, tenantID, flowID string) (*FlowDe
 		return nil, err
 	}
 
+	peers, err := u.storage.GetWorkflowPeers(ctx, tenantID, flowID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert spider.WorkflowPeer to PeerOutput
+	peerOutputs := make([]PeerOutput, len(peers))
+	for i, peer := range peers {
+		peerOutputs[i] = PeerOutput{
+			ParentKey:  peer.ParentKey,
+			MetaOutput: peer.MetaOutput,
+			ChildKey:   peer.ChildKey,
+		}
+	}
+
 	return &FlowDetailResponse{
 		FlowID:   flowID,
 		FlowName: flow.Name,
 		TenantID: tenantID,
 		Actions:  actions,
+		Peers:    peerOutputs,
 	}, nil
 }
 

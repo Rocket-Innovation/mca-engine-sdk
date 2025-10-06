@@ -569,6 +569,43 @@ func (w *MongodDBWorkflowStorageAdapter) GetWorkflowActions(ctx context.Context,
 	return actions, nil
 }
 
+func (w *MongodDBWorkflowStorageAdapter) GetWorkflowPeers(ctx context.Context, tenantID, workflowID string) ([]WorkflowPeer, error) {
+
+	cur, err := w.workflowActionDepCollection.Find(
+		ctx,
+		bson.D{
+			{Key: "workflow_id", Value: workflowID},
+		},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var peers []WorkflowPeer
+
+	for cur.TryNext(ctx) {
+
+		var dep MDWorkflowActionDep
+
+		err := cur.Decode(&dep)
+
+		if err != nil {
+			continue
+		}
+
+		peer := WorkflowPeer{
+			ParentKey:  dep.Key,
+			MetaOutput: dep.MetaOutput,
+			ChildKey:   dep.DepKey,
+		}
+
+		peers = append(peers, peer)
+	}
+
+	return peers, nil
+}
+
 func (w *MongodDBWorkflowStorageAdapter) UpdateAction(ctx context.Context, req *UpdateActionRequest) (*WorkflowAction, error) {
 
 	update := bson.D{
