@@ -159,7 +159,7 @@ func (w *Workflow) listenTriggerMessages(ctx context.Context) error {
 
 				if err != nil {
 					slog.Error("process expression failed - check mapper configuration",
-t					slog.String("error", err.Error()),
+					slog.String("error", err.Error()),
 						slog.String("workflow_id", dep.WorkflowID),
 						slog.String("session_id", sessionID),
 						slog.String("to_key", dep.Key),
@@ -296,7 +296,7 @@ func (w *Workflow) listenOutputMessages(ctx context.Context) error {
 
 				if err != nil {
 					slog.Error("ex failed - expression evaluation error",
-t					slog.String("error", err.Error()),
+					slog.String("error", err.Error()),
 						slog.String("workflow_id", dep.WorkflowID),
 						slog.String("session_id", m.SessionID),
 						slog.String("from_key", m.Key),
