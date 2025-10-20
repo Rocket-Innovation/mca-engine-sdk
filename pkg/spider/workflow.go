@@ -158,7 +158,15 @@ func (w *Workflow) listenTriggerMessages(ctx context.Context) error {
 				nextInput, err := ex(nextContextVal, dep.Map)
 
 				if err != nil {
-					slog.Error("process expression failed", slog.Any("error", err.Error()))
+					slog.Error("process expression failed - check mapper configuration",
+t					slog.String("error", err.Error()),
+						slog.String("workflow_id", dep.WorkflowID),
+						slog.String("session_id", sessionID),
+						slog.String("to_key", dep.Key),
+						slog.String("action_id", dep.ActionID),
+						slog.Any("mapper", dep.Map),
+						slog.Any("available_context", nextContextVal),
+					)
 					return err
 				}
 
@@ -287,7 +295,16 @@ func (w *Workflow) listenOutputMessages(ctx context.Context) error {
 				nextInput, err := ex(nextContextVal, dep.Map)
 
 				if err != nil {
-					slog.Error("ex failed", slog.Any("error", err.Error()))
+					slog.Error("ex failed - expression evaluation error",
+t					slog.String("error", err.Error()),
+						slog.String("workflow_id", dep.WorkflowID),
+						slog.String("session_id", m.SessionID),
+						slog.String("from_key", m.Key),
+						slog.String("to_key", dep.Key),
+						slog.String("action_id", dep.ActionID),
+						slog.Any("mapper", dep.Map),
+						slog.Any("available_context", nextContextVal),
+					)
 					return err
 				}
 
