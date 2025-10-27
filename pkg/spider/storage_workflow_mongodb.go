@@ -837,7 +837,7 @@ type MDWorkflowAction struct {
 	TenantID   string            `bson:"tenant_id"`   // Composite unique index
 	WorkflowID string            `bson:"workflow_id"` // Composite unique index
 	ActionID   string            `bson:"action_id"`
-	Config     map[string]string `bson:"config"`
+	Config     map[string]interface{} `bson:"config"`
 	Map        map[string]Mapper `bson:"map"`
 	Meta       map[string]string `bson:"meta,omitempty"`
 	Disabled   bool              `bson:"disabled"`
