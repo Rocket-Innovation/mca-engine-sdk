@@ -31,7 +31,7 @@ func main() {
 		WorkflowID: workflowID,
 		Key:        "a1",
 		ActionID:   "test-action-a",
-		Config: map[string]string{
+		Config: map[string]interface{}{
 			"test": "a",
 		},
 		Map:  nil,
@@ -47,7 +47,7 @@ func main() {
 		WorkflowID: workflowID,
 		Key:        "a2",
 		ActionID:   "test-action-b",
-		Config: map[string]string{
+		Config: map[string]interface{}{
 			"test": "b",
 		},
 		Map: map[string]spider.Mapper{
@@ -70,7 +70,7 @@ func main() {
 		WorkflowID: workflowID,
 		Key:        "a3",
 		ActionID:   "test-action-b",
-		Config: map[string]string{
+		Config: map[string]interface{}{
 			"test": "c",
 		},
 		Map: map[string]spider.Mapper{

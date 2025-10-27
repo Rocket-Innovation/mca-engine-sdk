@@ -152,11 +152,18 @@ func WaitCronsChanged(ctx context.Context, worker *spider.Worker, s gocron.Sched
 				continue
 			}
 
+			cronStr, ok := cron.(string)
+
+			if !ok {
+				slog.Error("cron value is not a string", slog.String("workflow_action_id", cc.WorkflowActionID))
+				continue
+			}
+
 			switch targetType {
 			case "create":
 				job, err := s.NewJob(
 					gocron.CronJob(
-						cron,
+						cronStr,
 						true,
 					),
 					gocron.NewTask(
@@ -185,7 +192,7 @@ func WaitCronsChanged(ctx context.Context, worker *spider.Worker, s gocron.Sched
 				job, err := s.Update(
 					prevjob.ID(),
 					gocron.CronJob(
-						cron,
+						cronStr,
 						true,
 					),
 					gocron.NewTask(
