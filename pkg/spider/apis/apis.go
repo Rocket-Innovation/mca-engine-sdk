@@ -18,7 +18,7 @@ func NewHandler(usecase *usecase.Usecase) *Handler {
 type WorkflowAction struct {
 	Key      string                   `json:"key" example:"a1"`
 	ActionID string                   `json:"action_id" example:"slack-action"`
-	Config   map[string]string        `json:"config"`
+	Config   map[string]interface{}   `json:"config"`
 	Mapper   map[string]spider.Mapper `json:"mapper"`
 	Meta     map[string]string        `json:"meta,omitempty"`
 }
@@ -48,7 +48,7 @@ type UpdateFlowPayload struct {
 
 // UpdateActionPayload represents the request body for updating an action
 type UpdateActionPayload struct {
-	Config map[string]string        `json:"config"`
+	Config map[string]interface{}   `json:"config"`
 	Mapper map[string]spider.Mapper `json:"mapper"`
 	Meta   map[string]string        `json:"meta,omitempty"`
 }
