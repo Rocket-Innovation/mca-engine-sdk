@@ -6,9 +6,9 @@ import (
 )
 
 type Worker struct {
-	messenger WorkerMessengerAdapter
-	storage   WorkerStorageAdapter
-	actionID  string
+	Messenger WorkerMessengerAdapter
+	Storage   WorkerStorageAdapter
+	ActionID  string
 }
 
 func InitDefaultWorker(
@@ -38,12 +38,12 @@ func InitDefaultWorker(
 
 func (w *Worker) Run(ctx context.Context, h func(c InputMessageContext, m InputMessage) error) error {
 
-	err := w.messenger.ListenInputMessages(
+	err := w.Messenger.ListenInputMessages(
 		ctx,
 		func(c InputMessageContext, m InputMessage) error {
 
 			c.SendOutput = func(metaOutput string, values string) error {
-				err := w.messenger.SendOutputMessage(c.Context, m.ToOutputMessage(metaOutput, values))
+				err := w.Messenger.SendOutputMessage(c.Context, m.ToOutputMessage(metaOutput, values))
 
 				if err != nil {
 					return err
@@ -68,9 +68,9 @@ func (w *Worker) Run(ctx context.Context, h func(c InputMessageContext, m InputM
 
 func (w *Worker) SendTriggerMessage(ctx context.Context, m TriggerMessage) error {
 
-	m.ActionID = w.actionID
+	m.ActionID = w.ActionID
 
-	err := w.messenger.SendTriggerMessage(ctx, m)
+	err := w.Messenger.SendTriggerMessage(ctx, m)
 
 	if err != nil {
 		return err
@@ -81,7 +81,7 @@ func (w *Worker) SendTriggerMessage(ctx context.Context, m TriggerMessage) error
 
 func (w *Worker) GetAllConfigs(ctx context.Context) ([]WorkerConfig, error) {
 
-	confs, err := w.storage.GetAllConfigs(ctx, w.actionID)
+	confs, err := w.Storage.GetAllConfigs(ctx, w.ActionID)
 
 	if err != nil {
 		return nil, err
@@ -92,7 +92,7 @@ func (w *Worker) GetAllConfigs(ctx context.Context) ([]WorkerConfig, error) {
 
 func (w *Worker) Close(ctx context.Context) error {
 
-	err := w.messenger.Close(ctx)
+	err := w.Messenger.Close(ctx)
 
 	if err != nil {
 		return err
