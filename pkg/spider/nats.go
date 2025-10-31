@@ -191,13 +191,6 @@ func betaCreateJetstream(ctx context.Context, js jetstream.JetStream, stream str
 func betaCreateConsumer(ctx context.Context, js jetstream.JetStream, stream, consumerID string) error {
 	_, err := js.Consumer(ctx, stream, consumerID)
 
-	slog.Info(
-		"check nats jetstream consumer exists",
-		slog.String("stream", stream),
-		slog.String("consumer", consumerID),
-		slog.String("error", err.Error()),
-	)
-
 	// ignore if consumer already exists
 	if err == nil {
 		return nil
