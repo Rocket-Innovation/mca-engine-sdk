@@ -205,7 +205,7 @@ func betaCreateConsumer(ctx context.Context, js jetstream.JetStream, stream, con
 
 	_, err = js.CreateConsumer(ctx, stream, jetstream.ConsumerConfig{
 		Name:               consumerID,
-		Durable:            "",
+		Durable:            consumerID,
 		Description:        "",
 		DeliverPolicy:      jetstream.DeliverAllPolicy,
 		OptStartSeq:        0,
