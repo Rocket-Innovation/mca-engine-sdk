@@ -357,18 +357,18 @@ func (w *MongodDBWorkflowStorageAdapter) CreateSessionContext(ctx context.Contex
 }
 
 func (w *MongodDBWorkflowStorageAdapter) DeleteSessionContext(ctx context.Context, workflowID, sessionID, taskID string) error {
-	// _, err := w.workflowSessionContextCollection.DeleteOne(
-	// 	ctx,
-	// 	bson.D{
-	// 		{Key: "workflow_id", Value: workflowID},
-	// 		{Key: "session_id", Value: sessionID},
-	// 		{Key: "task_id", Value: taskID},
-	// 	},
-	// )
-	//
-	// if err != nil {
-	// 	return err
-	// }
+	_, err := w.workflowSessionContextCollection.DeleteOne(
+		ctx,
+		bson.D{
+			{Key: "workflow_id", Value: workflowID},
+			{Key: "session_id", Value: sessionID},
+			{Key: "task_id", Value: taskID},
+		},
+	)
+
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -832,15 +832,15 @@ type MDFlow struct {
 }
 
 type MDWorkflowAction struct {
-	ID         string            `bson:"_id"`
-	Key        string            `bson:"key"`         // Composite unique index
-	TenantID   string            `bson:"tenant_id"`   // Composite unique index
-	WorkflowID string            `bson:"workflow_id"` // Composite unique index
-	ActionID   string            `bson:"action_id"`
+	ID         string                 `bson:"_id"`
+	Key        string                 `bson:"key"`         // Composite unique index
+	TenantID   string                 `bson:"tenant_id"`   // Composite unique index
+	WorkflowID string                 `bson:"workflow_id"` // Composite unique index
+	ActionID   string                 `bson:"action_id"`
 	Config     map[string]interface{} `bson:"config"`
-	Map        map[string]Mapper `bson:"map"`
-	Meta       map[string]string `bson:"meta,omitempty"`
-	Disabled   bool              `bson:"disabled"`
+	Map        map[string]Mapper      `bson:"map"`
+	Meta       map[string]string      `bson:"meta,omitempty"`
+	Disabled   bool                   `bson:"disabled"`
 }
 
 type MDWorkflowActionDep struct {
