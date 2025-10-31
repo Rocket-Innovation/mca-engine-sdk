@@ -2,7 +2,6 @@ package spider
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -192,8 +191,9 @@ func betaCreateJetstream(ctx context.Context, js jetstream.JetStream, stream str
 func betaCreateConsumer(ctx context.Context, js jetstream.JetStream, stream, consumerID string) error {
 	_, err := js.Consumer(ctx, stream, consumerID)
 
-	if err != nil && !errors.Is(err, jetstream.ErrConsumerNotFound) {
-		return err
+	// ignore if consumer already exists
+	if err == nil {
+		return nil
 	}
 
 	_, err = js.CreateConsumer(ctx, stream, jetstream.ConsumerConfig{
