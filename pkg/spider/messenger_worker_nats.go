@@ -105,7 +105,12 @@ func (m *NATSWorkerMessengerAdapter) ListenInputMessages(ctx context.Context, h 
 	cctx, err := m.c.Consume(func(msg jetstream.Msg) {
 		sem <- struct{}{}
 
-		msg.Ack()
+		err := msg.DoubleAck(ctx)
+
+		if err != nil {
+			slog.Error("failed to double ack message", slog.String("error", err.Error()))
+			return
+		}
 
 		go func() error {
 			defer func() {

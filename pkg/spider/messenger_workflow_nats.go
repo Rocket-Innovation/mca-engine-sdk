@@ -141,7 +141,12 @@ func (m *NATSWorkflowMessengerAdapter) ListenTriggerMessages(ctx context.Context
 
 	cctx, err := m.triggerMessageConsumer.Consume(func(msg jetstream.Msg) {
 		eg.Go(func() error {
-			msg.Ack()
+			err := msg.DoubleAck(ctx)
+
+			if err != nil {
+				slog.Error("failed to double ack message", slog.String("error", err.Error()))
+				return err
+			}
 
 			slog.Info(
 				"received output",
@@ -206,7 +211,12 @@ func (m *NATSWorkflowMessengerAdapter) ListenOutputMessages(ctx context.Context,
 
 	cctx, err := m.outputMessageConsumer.Consume(func(msg jetstream.Msg) {
 		eg.Go(func() error {
-			msg.Ack()
+			err := msg.DoubleAck(ctx)
+
+			if err != nil {
+				slog.Error("failed to double ack message", slog.String("error", err.Error()))
+				return err
+			}
 
 			slog.Info(
 				"received output",
