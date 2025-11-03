@@ -84,6 +84,28 @@ func (w *Workflow) listenTriggerMessages(ctx context.Context) error {
 
 	err := w.messenger.ListenTriggerMessages(ctx, func(c TriggerMessageContext, m TriggerMessage) error {
 
+		// Check workflow status before processing trigger
+		workflow, err := w.storage.GetFlow(c.Context, m.TenantID, m.WorkflowID)
+
+		if err != nil {
+			slog.Error(
+				"GetFlow failed",
+				slog.Any("error", err.Error()),
+				slog.Any("workflow_id", m.WorkflowID),
+			)
+			return err
+		}
+
+		// Skip if workflow is not active
+		if workflow.Status != FlowStatusActive {
+			slog.Info(
+				"workflow not active, skipping trigger",
+				slog.Any("workflow_id", m.WorkflowID),
+				slog.Any("status", workflow.Status),
+			)
+			return nil
+		}
+
 		workflowAction, err := w.storage.QueryWorkflowAction(c.Context, m.TenantID, m.WorkflowID, m.Key)
 
 		if err != nil {
@@ -217,6 +239,28 @@ func (w *Workflow) listenTriggerMessages(ctx context.Context) error {
 func (w *Workflow) listenOutputMessages(ctx context.Context) error {
 
 	err := w.messenger.ListenOutputMessages(ctx, func(c OutputMessageContext, m OutputMessage) error {
+
+		// Check workflow status before processing output
+		workflow, err := w.storage.GetFlow(c.Context, m.TenantID, m.WorkflowID)
+
+		if err != nil {
+			slog.Error(
+				"GetFlow failed",
+				slog.Any("error", err.Error()),
+				slog.Any("workflow_id", m.WorkflowID),
+			)
+			return err
+		}
+
+		// Skip if workflow is not active
+		if workflow.Status != FlowStatusActive {
+			slog.Info(
+				"workflow not active, skipping output",
+				slog.Any("workflow_id", m.WorkflowID),
+				slog.Any("status", workflow.Status),
+			)
+			return nil
+		}
 
 		workflowAction, err := w.storage.QueryWorkflowAction(c.Context, m.TenantID, m.WorkflowID, m.Key)
 
