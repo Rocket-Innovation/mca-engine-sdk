@@ -53,7 +53,7 @@ type MongodDBWorkerStorageAdapter struct {
 func NewMongodDBWorkerStorageAdapter(client *mongo.Client, db *mongo.Database) *MongodDBWorkerStorageAdapter {
 	return &MongodDBWorkerStorageAdapter{
 		client:                   client,
-		workflowActionCollection: db.Collection("workflow_actions"),
+		workflowActionCollection: db.Collection("actions"),
 		workflowCollection:       db.Collection("workflows"),
 	}
 }
