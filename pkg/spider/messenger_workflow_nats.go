@@ -76,31 +76,31 @@ func InitNATSWorkflowMessengerAdapter(ctx context.Context, opt InitNATSWorkflowM
 		err = betaCreateJetstream(ctx, nc.JS(), triggerStream)
 
 		if err != nil {
-			// return nil, err
+			return nil, err
 		}
 
 		err = betaCreateJetstream(ctx, nc.JS(), inputStream)
 
 		if err != nil {
-			// return nil, err
+			return nil, err
 		}
 
 		err = betaCreateJetstream(ctx, nc.JS(), outputStream)
 
 		if err != nil {
-			// return nil, err
+			return nil, err
 		}
 
 		err = betaCreateConsumer(ctx, nc.JS(), triggerStream, workflowActionTriggerConsumerID)
 
 		if err != nil {
-			// return nil, err
+			return nil, err
 		}
 
 		err = betaCreateConsumer(ctx, nc.JS(), outputStream, workflowActionOutputConsumerID)
 
 		if err != nil {
-			// return nil, err
+			return nil, err
 		}
 	}
 

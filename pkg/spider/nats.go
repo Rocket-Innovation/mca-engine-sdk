@@ -152,10 +152,10 @@ func betaCreateJetstream(ctx context.Context, js jetstream.JetStream, stream str
 		MaxBytes:               0,
 		Discard:                jetstream.DiscardOld,
 		DiscardNewPerSubject:   false,
-		MaxAge:                 time.Hour,
+		MaxAge:                 24 * time.Hour, // Changed from 1 hour to 24 hours for better retention
 		MaxMsgsPerSubject:      0,
 		MaxMsgSize:             0,
-		Storage:                jetstream.MemoryStorage,
+		Storage:                jetstream.FileStorage, // Changed from MemoryStorage to FileStorage for persistence across restarts
 		Replicas:               1,
 		NoAck:                  false,
 		Duplicates:             time.Minute * 2,
@@ -180,10 +180,13 @@ func betaCreateJetstream(ctx context.Context, js jetstream.JetStream, stream str
 	})
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create NATS stream %s: %w", stream, err)
 	}
 
-	slog.Info("nats jetstream created", slog.String("stream", stream))
+	slog.Info("nats jetstream created",
+		slog.String("stream", stream),
+		slog.String("storage", "file"),
+		slog.Duration("max_age", 24*time.Hour))
 
 	return nil
 }
