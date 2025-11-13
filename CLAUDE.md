@@ -78,3 +78,35 @@ Spider Go is a distributed workflow engine built on a message-passing architectu
 
 ### API Layer
 REST API (`cmd/workflow/main.go`) provides workflow management endpoints with Swagger documentation at `/swagger/`. Key endpoints include tenant-scoped workflow CRUD operations and action management.
+## Platform Documentation
+
+### 📚 Centralized Documentation
+
+**All MCA platform documentation is located in: `../mca-automation-workflow/MD/`**
+
+This centralized folder contains comprehensive guides covering the entire MCA ecosystem:
+
+#### Quick Access
+- **[Documentation Index](../mca-automation-workflow/MD/README.md)** - Complete catalog (19+ files, 9,000+ lines)
+- **[Architecture Guide](../mca-automation-workflow/MD/ARCHITECTURE_GUIDE.md)** - Complete system architecture
+- **[Quick Start Guide](../mca-automation-workflow/MD/QUICK_START.md)** - 5-minute platform setup
+
+#### Key Documentation Categories
+- **Architecture & System** (2 files) - System design, workflow flows
+- **Query & Conditions** (3 files) - Condition system, SQL generation, cross-event analysis
+- **Frontend Features** (5 files) - UI components, variable helpers, node management
+- **Custom Fields** (3 files) - Custom field implementation and integration
+- **Testing & Integration** (2 files) - End-to-end testing, Playwright helpers
+- **MCP Playwright** (3 files) - Browser automation integration
+
+#### Related Repositories
+- **[mca-front-end/CLAUDE.md](../mca-front-end/CLAUDE.md)** - Frontend workflow builder
+- **[mca-automation-workflow/CLAUDE.md](../mca-automation-workflow/CLAUDE.md)** - Workflow execution engine
+- **[mca-bigQuery/CLAUDE.md](../mca-bigQuery/CLAUDE.md)** - PostgreSQL query service
+
+**Why Centralized in Backend Repository?**
+- Backend is the primary working directory for development
+- Single source of truth for platform architecture
+- Consistent documentation across all services
+- Easy access from any repository via relative paths
+- Co-located with workflow engine (core of the platform)
