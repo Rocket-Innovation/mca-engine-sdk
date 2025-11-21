@@ -100,3 +100,19 @@ func (w *Worker) Close(ctx context.Context) error {
 
 	return nil
 }
+
+// GetExecutionHistory retrieves a workflow execution history record
+func (w *Worker) GetExecutionHistory(ctx context.Context, tenantID, workflowID, actionKey, userID string) (*WorkflowExecutionHistory, error) {
+	if mongoAdapter, ok := w.Storage.(*MongodDBWorkerStorageAdapter); ok {
+		return mongoAdapter.GetExecutionHistory(ctx, tenantID, workflowID, actionKey, userID)
+	}
+	return nil, nil
+}
+
+// UpsertExecutionHistory inserts or updates a workflow execution history record
+func (w *Worker) UpsertExecutionHistory(ctx context.Context, record *WorkflowExecutionHistory) error {
+	if mongoAdapter, ok := w.Storage.(*MongodDBWorkerStorageAdapter); ok {
+		return mongoAdapter.UpsertExecutionHistory(ctx, record)
+	}
+	return nil
+}
