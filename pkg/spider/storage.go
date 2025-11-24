@@ -98,12 +98,13 @@ type WorkflowStorageAdapter interface {
 }
 
 type WorkerConfig struct {
-	WorkflowActionID string            `json:"workflow_action_id"`
-	TenantID         string            `json:"tenant_id"`
-	WorkflowID       string            `json:"workflow_id"`
-	Key              string            `json:"key"`
+	WorkflowActionID string                 `json:"workflow_action_id"`
+	TenantID         string                 `json:"tenant_id"`
+	WorkflowID       string                 `json:"workflow_id"`
+	WorkflowName     string                 `json:"workflow_name"`
+	Key              string                 `json:"key"`
 	Config           map[string]interface{} `json:"config"`
-	Meta             map[string]string `json:"meta,omitempty"`
+	Meta             map[string]string      `json:"meta,omitempty"`
 }
 
 type WorkerStorageAdapter interface {

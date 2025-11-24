@@ -164,21 +164,28 @@ func (w *MongodDBWorkerStorageAdapter) GetAllConfigs(ctx context.Context, action
 
 	for cur.TryNext(ctx) {
 
-		var workerAction MDWorkflowAction
+		// Temporary struct to hold aggregation result with workflow data
+		var result struct {
+			MDWorkflowAction `bson:",inline"`
+			Workflow         struct {
+				Name string `bson:"name"`
+			} `bson:"workflow"`
+		}
 
-		err := cur.Decode(&workerAction)
+		err := cur.Decode(&result)
 
 		if err != nil {
 			return nil, err
 		}
 
 		confs = append(confs, WorkerConfig{
-			WorkflowActionID: workerAction.ID,
-			TenantID:         workerAction.TenantID,
-			WorkflowID:       workerAction.WorkflowID,
-			Key:              workerAction.Key,
-			Config:           workerAction.Config,
-			Meta:             workerAction.Meta,
+			WorkflowActionID: result.ID,
+			TenantID:         result.TenantID,
+			WorkflowID:       result.WorkflowID,
+			WorkflowName:     result.Workflow.Name,
+			Key:              result.Key,
+			Config:           result.Config,
+			Meta:             result.Meta,
 		})
 	}
 
