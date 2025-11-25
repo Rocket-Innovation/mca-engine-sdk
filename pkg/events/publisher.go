@@ -2,10 +2,12 @@ package events
 
 import (
 	"context"
+	"crypto/tls"
 	"log"
 	"time"
 
 	"github.com/segmentio/kafka-go"
+	"github.com/segmentio/kafka-go/sasl/plain"
 )
 
 // Publisher publishes workflow events to Kafka
@@ -14,17 +16,45 @@ type Publisher struct {
 	topic  string
 }
 
-// NewPublisher creates a new Kafka publisher
+// PublisherConfig holds configuration for the Kafka publisher
+type PublisherConfig struct {
+	Brokers  []string
+	Username string
+	Password string
+}
+
+// NewPublisher creates a new Kafka publisher without authentication (for local/testing)
 func NewPublisher(brokers []string) *Publisher {
+	return NewPublisherWithAuth(PublisherConfig{
+		Brokers: brokers,
+	})
+}
+
+// NewPublisherWithAuth creates a new Kafka publisher with SASL authentication
+func NewPublisherWithAuth(config PublisherConfig) *Publisher {
 	topic := GetWorkflowEventsTopic()
 	log.Printf("[WorkflowEvents] Publisher initialized for topic: %s", topic)
 
+	// Configure transport with TLS and SASL if credentials provided
+	var transport *kafka.Transport
+	if config.Username != "" && config.Password != "" {
+		mechanism := plain.Mechanism{
+			Username: config.Username,
+			Password: config.Password,
+		}
+		transport = &kafka.Transport{
+			SASL: mechanism,
+			TLS:  &tls.Config{},
+		}
+		log.Printf("[WorkflowEvents] Using SASL PLAIN authentication")
+	}
+
 	writer := &kafka.Writer{
-		Addr:         kafka.TCP(brokers...),
+		Addr:         kafka.TCP(config.Brokers...),
 		Topic:        topic,
 		Balancer:     &kafka.LeastBytes{},
 		BatchTimeout: 10 * time.Millisecond, // Low latency
-		Async:        true,                  // Non-blocking writes
+		Transport:    transport,
 	}
 
 	return &Publisher{
