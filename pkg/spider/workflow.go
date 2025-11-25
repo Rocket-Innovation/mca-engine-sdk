@@ -6,14 +6,25 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/Rocket-Innovation/mca-engine-sdk/pkg/events"
 	"github.com/expr-lang/expr"
 	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 )
 
+// EventPublisher interface for publishing workflow events
+type EventPublisher interface {
+	PublishWorkflowStarted(ctx context.Context, tenantID, workflowID, workflowName, sessionID string, recipientID string, recipientType events.RecipientType, actionKey, actionID string, payload map[string]interface{}) error
+	PublishEntered(ctx context.Context, tenantID, workflowID, workflowName, sessionID, taskID string, recipientID string, recipientType events.RecipientType, actionKey, actionID string) error
+	PublishExitedSuccess(ctx context.Context, tenantID, workflowID, workflowName, sessionID, taskID string, recipientID string, recipientType events.RecipientType, actionKey, actionID string, payload map[string]interface{}) error
+	PublishExitedFailed(ctx context.Context, tenantID, workflowID, workflowName, sessionID, taskID string, recipientID string, recipientType events.RecipientType, actionKey, actionID string, errorMessage string) error
+	Close() error
+}
+
 type Workflow struct {
 	messenger WorkflowMessengerAdapter
 	storage   WorkflowStorageAdapter
+	publisher EventPublisher
 }
 
 func InitWorkflow(
@@ -21,8 +32,21 @@ func InitWorkflow(
 	storage WorkflowStorageAdapter,
 ) *Workflow {
 	return &Workflow{
-		messenger,
-		storage,
+		messenger: messenger,
+		storage:   storage,
+	}
+}
+
+// InitWorkflowWithPublisher creates a workflow with event publisher for reporting
+func InitWorkflowWithPublisher(
+	messenger WorkflowMessengerAdapter,
+	storage WorkflowStorageAdapter,
+	publisher EventPublisher,
+) *Workflow {
+	return &Workflow{
+		messenger: messenger,
+		storage:   storage,
+		publisher: publisher,
 	}
 }
 
@@ -46,8 +70,8 @@ func InitDefaultWorkflow(
 	}
 
 	return &Workflow{
-		messenger,
-		storage,
+		messenger: messenger,
+		storage:   storage,
 	}, nil
 }
 
@@ -148,6 +172,29 @@ func (w *Workflow) listenTriggerMessages(ctx context.Context) error {
 
 		nextContextVal["$trigger"] = nextContextVal[m.Key]
 
+		// Extract recipient info from trigger values for event tracking
+		recipientID, recipientType := extractRecipientInfo(wvalues)
+
+		// Publish workflow_started event
+		if w.publisher != nil {
+			err = w.publisher.PublishWorkflowStarted(
+				c.Context,
+				m.TenantID,
+				m.WorkflowID,
+				workflow.Name,
+				sessionID,
+				recipientID,
+				recipientType,
+				m.Key,
+				m.ActionID,
+				wvalues,
+			)
+			if err != nil {
+				slog.Error("failed to publish workflow_started event", slog.String("error", err.Error()))
+				// Don't return error - event publishing failure shouldn't block workflow
+			}
+		}
+
 		deps, err := w.storage.QueryWorkflowActionDependencies(c.Context, m.TenantID, m.WorkflowID, m.Key, m.MetaOutput)
 
 		if err != nil {
@@ -218,6 +265,25 @@ func (w *Workflow) listenTriggerMessages(ctx context.Context) error {
 				if err != nil {
 					slog.Error("sent input message failed", slog.Any("error", err.Error()))
 					return err
+				}
+
+				// Publish entered event
+				if w.publisher != nil {
+					err = w.publisher.PublishEntered(
+						ctx,
+						dep.TenantID,
+						dep.WorkflowID,
+						workflow.Name,
+						sessionID,
+						nextTaskID,
+						recipientID,
+						recipientType,
+						dep.Key,
+						dep.ActionID,
+					)
+					if err != nil {
+						slog.Error("failed to publish entered event", slog.String("error", err.Error()))
+					}
 				}
 
 				return nil
@@ -300,6 +366,29 @@ func (w *Workflow) listenOutputMessages(ctx context.Context) error {
 			"output": wvalues,
 		}
 
+		// Extract recipient info from context for event tracking
+		recipientID, recipientType := extractRecipientInfoFromContext(wcontext)
+
+		// Publish exited event (action completed successfully)
+		if w.publisher != nil {
+			err = w.publisher.PublishExitedSuccess(
+				c.Context,
+				m.TenantID,
+				m.WorkflowID,
+				workflow.Name,
+				m.SessionID,
+				m.TaskID,
+				recipientID,
+				recipientType,
+				m.Key,
+				workflowAction.ActionID,
+				wvalues,
+			)
+			if err != nil {
+				slog.Error("failed to publish exited event", slog.String("error", err.Error()))
+			}
+		}
+
 		deps, err := w.storage.QueryWorkflowActionDependencies(c.Context, m.TenantID, m.WorkflowID, m.Key, m.MetaOutput)
 
 		if err != nil {
@@ -378,6 +467,25 @@ func (w *Workflow) listenOutputMessages(ctx context.Context) error {
 				if err != nil {
 					slog.Error("sent input message failed", slog.Any("error", err.Error()))
 					return err
+				}
+
+				// Publish entered event for the next action
+				if w.publisher != nil {
+					err = w.publisher.PublishEntered(
+						ctx,
+						dep.TenantID,
+						dep.WorkflowID,
+						workflow.Name,
+						m.SessionID,
+						nextTaskID,
+						recipientID,
+						recipientType,
+						dep.Key,
+						dep.ActionID,
+					)
+					if err != nil {
+						slog.Error("failed to publish entered event", slog.String("error", err.Error()))
+					}
 				}
 
 				return nil
@@ -467,4 +575,50 @@ func ex(env map[string]map[string]interface{}, mapping map[string]Mapper) (map[s
 	}
 
 	return output, nil
+}
+
+// extractRecipientInfo extracts recipient ID and type from trigger values
+// Looks for contact.id/contact.user_id or order.id in the trigger payload
+func extractRecipientInfo(values map[string]interface{}) (string, events.RecipientType) {
+	// Try to find contact info
+	if contact, ok := values["contact"].(map[string]interface{}); ok {
+		// Prefer user_id if available (consistent with workflow_recipients)
+		if userID, ok := contact["user_id"].(string); ok && userID != "" {
+			return userID, events.RecipientTypeContacts
+		}
+		if id, ok := contact["id"].(string); ok && id != "" {
+			return id, events.RecipientTypeContacts
+		}
+	}
+
+	// Try to find order info
+	if order, ok := values["order"].(map[string]interface{}); ok {
+		if id, ok := order["id"].(string); ok && id != "" {
+			return id, events.RecipientTypeOrders
+		}
+	}
+
+	return "", ""
+}
+
+// extractRecipientInfoFromContext extracts recipient info from session context
+// The context has structure like {"$trigger": {"output": {"contact": {...}}}}
+func extractRecipientInfoFromContext(ctx map[string]map[string]interface{}) (string, events.RecipientType) {
+	// Check $trigger context which contains the original trigger data
+	if trigger, ok := ctx["$trigger"]; ok {
+		if output, ok := trigger["output"].(map[string]interface{}); ok {
+			return extractRecipientInfo(output)
+		}
+	}
+
+	// Fallback: scan all context keys for contact/order data
+	for _, v := range ctx {
+		if output, ok := v["output"].(map[string]interface{}); ok {
+			if id, rtype := extractRecipientInfo(output); id != "" {
+				return id, rtype
+			}
+		}
+	}
+
+	return "", ""
 }
