@@ -26,8 +26,8 @@ type WorkflowRecipientPayload struct {
 	WorkflowID    string             `json:"workflow_id"`
 	WorkflowName  string             `json:"workflow_name,omitempty"`
 	RecipientID   string             `json:"recipient_id"`
-	RecipientType string             `json:"recipient_type"` // "contact", "order", "point"
-	ExecutionID   string             `json:"execution_id"`   // Session/execution ID
+	RecipientType string             `json:"recipient_type"` // "contacts", "orders", "points"
+	SessionID   string             `json:"session_id"`   // Session/execution ID
 	EventType     RecipientEventType `json:"event_type"`     // started, completed, exited
 	ExitReason    string             `json:"exit_reason,omitempty"`
 	EventTime     time.Time          `json:"event_time"`
@@ -93,7 +93,7 @@ func (p *RecipientPublisher) Publish(ctx context.Context, payload *WorkflowRecip
 	}
 
 	err = p.writer.WriteMessages(ctx, kafka.Message{
-		Key:   []byte(payload.ExecutionID),
+		Key:   []byte(payload.SessionID),
 		Value: data,
 	})
 
@@ -103,7 +103,7 @@ func (p *RecipientPublisher) Publish(ctx context.Context, payload *WorkflowRecip
 	}
 
 	log.Printf("[WorkflowRecipients] Published %s for workflow %s execution %s recipient %s",
-		payload.EventType, payload.WorkflowID, payload.ExecutionID, payload.RecipientID)
+		payload.EventType, payload.WorkflowID, payload.SessionID, payload.RecipientID)
 	return nil
 }
 
@@ -111,7 +111,7 @@ func (p *RecipientPublisher) Publish(ctx context.Context, payload *WorkflowRecip
 func (p *RecipientPublisher) PublishStarted(
 	ctx context.Context,
 	tenantID, workflowID, workflowName string,
-	recipientID, recipientType, executionID string,
+	recipientID, recipientType, sessionID string,
 ) error {
 	now := time.Now()
 	payload := &WorkflowRecipientPayload{
@@ -120,7 +120,7 @@ func (p *RecipientPublisher) PublishStarted(
 		WorkflowName:  workflowName,
 		RecipientID:   recipientID,
 		RecipientType: recipientType,
-		ExecutionID:   executionID,
+		SessionID:   sessionID,
 		EventType:     RecipientEventTypeStarted,
 		EventTime:     now,
 		Timestamp:     now,
@@ -132,14 +132,14 @@ func (p *RecipientPublisher) PublishStarted(
 func (p *RecipientPublisher) PublishCompleted(
 	ctx context.Context,
 	tenantID, workflowID string,
-	recipientID, executionID string,
+	recipientID, sessionID string,
 ) error {
 	now := time.Now()
 	payload := &WorkflowRecipientPayload{
 		TenantID:    tenantID,
 		WorkflowID:  workflowID,
 		RecipientID: recipientID,
-		ExecutionID: executionID,
+		SessionID: sessionID,
 		EventType:   RecipientEventTypeCompleted,
 		EventTime:   now,
 		Timestamp:   now,
@@ -151,7 +151,7 @@ func (p *RecipientPublisher) PublishCompleted(
 func (p *RecipientPublisher) PublishExited(
 	ctx context.Context,
 	tenantID, workflowID string,
-	recipientID, executionID string,
+	recipientID, sessionID string,
 	exitReason string,
 ) error {
 	now := time.Now()
@@ -159,7 +159,7 @@ func (p *RecipientPublisher) PublishExited(
 		TenantID:    tenantID,
 		WorkflowID:  workflowID,
 		RecipientID: recipientID,
-		ExecutionID: executionID,
+		SessionID: sessionID,
 		EventType:   RecipientEventTypeExited,
 		ExitReason:  exitReason,
 		EventTime:   now,

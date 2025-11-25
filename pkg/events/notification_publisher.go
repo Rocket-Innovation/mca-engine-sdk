@@ -33,7 +33,7 @@ const (
 
 // WorkflowNotificationPayload is the message structure for notification executions Kafka topic
 type WorkflowNotificationPayload struct {
-	ExecutionID      string                 `json:"execution_id"`      // Session/execution ID
+	SessionID      string                 `json:"session_id"`      // Session/execution ID
 	WorkflowID       string                 `json:"workflow_id"`       // For lookups
 	RecipientID      string                 `json:"recipient_id"`      // For linking
 	ActionKey        string                 `json:"action_key"`        // Node key (a1, a2, etc.)
@@ -109,7 +109,7 @@ func (p *NotificationPublisher) Publish(ctx context.Context, payload *WorkflowNo
 	}
 
 	err = p.writer.WriteMessages(ctx, kafka.Message{
-		Key:   []byte(payload.ExecutionID),
+		Key:   []byte(payload.SessionID),
 		Value: data,
 	})
 
@@ -119,14 +119,14 @@ func (p *NotificationPublisher) Publish(ctx context.Context, payload *WorkflowNo
 	}
 
 	log.Printf("[WorkflowNotifications] Published %s notification for execution %s action %s status %s",
-		payload.Channel, payload.ExecutionID, payload.ActionKey, payload.Status)
+		payload.Channel, payload.SessionID, payload.ActionKey, payload.Status)
 	return nil
 }
 
 // PublishSuccess publishes a successful notification execution
 func (p *NotificationPublisher) PublishSuccess(
 	ctx context.Context,
-	executionID, workflowID, recipientID string,
+	sessionID, workflowID, recipientID string,
 	actionKey, actionID string,
 	channel NotificationChannel,
 	messageContent string,
@@ -134,7 +134,7 @@ func (p *NotificationPublisher) PublishSuccess(
 ) error {
 	now := time.Now()
 	payload := &WorkflowNotificationPayload{
-		ExecutionID:     executionID,
+		SessionID:     sessionID,
 		WorkflowID:      workflowID,
 		RecipientID:     recipientID,
 		ActionKey:       actionKey,
@@ -153,14 +153,14 @@ func (p *NotificationPublisher) PublishSuccess(
 // PublishFailed publishes a failed notification execution
 func (p *NotificationPublisher) PublishFailed(
 	ctx context.Context,
-	executionID, workflowID, recipientID string,
+	sessionID, workflowID, recipientID string,
 	actionKey, actionID string,
 	channel NotificationChannel,
 	errorMessage string,
 ) error {
 	now := time.Now()
 	payload := &WorkflowNotificationPayload{
-		ExecutionID:    executionID,
+		SessionID:    sessionID,
 		WorkflowID:     workflowID,
 		RecipientID:    recipientID,
 		ActionKey:      actionKey,
