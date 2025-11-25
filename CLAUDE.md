@@ -2,7 +2,50 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Common Development Commands
+## Project: MCA Engine SDK (Spider-Go)
+
+**This is the shared workflow SDK library** - the runtime engine and worker framework used by all MCA services.
+
+**Role:** Workflow execution engine, worker abstraction, NATS messaging, MongoDB storage adapters.
+
+---
+
+## 📚 Platform Documentation
+
+**All cross-platform documentation is centralized in: `../mca-document/`**
+
+For understanding the MCA platform as a whole, see:
+- **[Documentation Index](../mca-document/README.md)** - Complete catalog of all platform docs
+- **[Architecture Guide](../mca-document/ARCHITECTURE_GUIDE.md)** - Complete system architecture
+- **[Quick Start Guide](../mca-document/QUICK_START.md)** - 5-minute platform setup
+
+For service implementations:
+- **[mca-automation-workflow/CLAUDE.md](../mca-automation-workflow/CLAUDE.md)** - Backend workflow service
+- **[mca-front-end/CLAUDE.md](../mca-front-end/CLAUDE.md)** - Frontend workflow builder
+- **[mca-bigQuery/CLAUDE.md](../mca-bigQuery/CLAUDE.md)** - PostgreSQL query service
+
+---
+
+## This Library Overview
+
+**Spider-Go SDK** is a distributed workflow engine library built on NATS JetStream and MongoDB.
+
+**What This Library Provides:**
+- Workflow runtime engine
+- Worker abstraction (spider.Worker interface)
+- MongoDB storage adapters
+- NATS messaging layer
+- Configuration auto-loading
+- Expression evaluation (expr-lang)
+
+**Used By:**
+- mca-automation-workflow (all 5 services)
+- mca-bigQuery (worker mode)
+- Any custom worker implementations
+
+---
+
+## Development Commands
 
 ### Building and Testing
 ```bash
@@ -27,6 +70,8 @@ go run cmd/slack-worker/main.go    # Slack notification worker
 go run cmd/webhook-trigger/main.go # HTTP webhook trigger
 go run cmd/cron-trigger/main.go    # Cron-based trigger
 ```
+
+---
 
 ## Architecture Overview
 
@@ -71,6 +116,8 @@ Spider Go is a distributed workflow engine built on a message-passing architectu
 4. Engine updates session context and triggers dependent actions
 5. Process continues until workflow completion
 
+**Detailed flow diagrams:** [Architecture Guide](../mca-document/ARCHITECTURE_GUIDE.md)
+
 ### Configuration
 - Environment variables for NATS and MongoDB connections
 - Workers retrieve configuration through storage adapters
@@ -78,35 +125,96 @@ Spider Go is a distributed workflow engine built on a message-passing architectu
 
 ### API Layer
 REST API (`cmd/workflow/main.go`) provides workflow management endpoints with Swagger documentation at `/swagger/`. Key endpoints include tenant-scoped workflow CRUD operations and action management.
-## Platform Documentation
 
-### 📚 Centralized Documentation
+---
 
-**All MCA platform documentation is located in: `../mca-automation-workflow/MD/`**
+## Worker Pattern
 
-This centralized folder contains comprehensive guides covering the entire MCA ecosystem:
+Workers implement `spider.Worker`:
+```go
+type Worker interface {
+    Run(ctx context.Context) error
+    ActionID() string
+    Process(ctx context.Context, input InputMessage) (OutputMessage, error)
+}
+```
 
-#### Quick Access
-- **[Documentation Index](../mca-automation-workflow/MD/README.md)** - Complete catalog (19+ files, 9,000+ lines)
-- **[Architecture Guide](../mca-automation-workflow/MD/ARCHITECTURE_GUIDE.md)** - Complete system architecture
-- **[Quick Start Guide](../mca-automation-workflow/MD/QUICK_START.md)** - 5-minute platform setup
+**Key Features:**
+- Listen to NATS for action_id-specific messages
+- Process input and return output
+- Acknowledgment-based delivery (at-least-once)
 
-#### Key Documentation Categories
-- **Architecture & System** (2 files) - System design, workflow flows
-- **Query & Conditions** (3 files) - Condition system, SQL generation, cross-event analysis
-- **Frontend Features** (5 files) - UI components, variable helpers, node management
-- **Custom Fields** (3 files) - Custom field implementation and integration
-- **Testing & Integration** (2 files) - End-to-end testing, Playwright helpers
-- **MCP Playwright** (3 files) - Browser automation integration
+**Example Implementations:**
+- `mca-automation-workflow/internal/app/slack_worker/` - Slack notifications
+- `mca-automation-workflow/internal/app/control_flow_worker/` - Condition evaluation
+- `mca-bigQuery/cmd/worker/` - PostgreSQL queries
 
-#### Related Repositories
-- **[mca-front-end/CLAUDE.md](../mca-front-end/CLAUDE.md)** - Frontend workflow builder
-- **[mca-automation-workflow/CLAUDE.md](../mca-automation-workflow/CLAUDE.md)** - Workflow execution engine
-- **[mca-bigQuery/CLAUDE.md](../mca-bigQuery/CLAUDE.md)** - PostgreSQL query service
+---
 
-**Why Centralized in Backend Repository?**
-- Backend is the primary working directory for development
-- Single source of truth for platform architecture
-- Consistent documentation across all services
-- Easy access from any repository via relative paths
-- Co-located with workflow engine (core of the platform)
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `pkg/spider/workflow.go` | Workflow engine core |
+| `pkg/spider/worker.go` | Worker interface & base |
+| `pkg/spider/action.go` | Action model |
+| `pkg/storage/` | MongoDB adapters |
+| `pkg/messenger/` | NATS adapters |
+| `cmd/workflow/main.go` | API server example |
+
+---
+
+## Integration with MCA Services
+
+This SDK is imported by all MCA services:
+
+**mca-automation-workflow:**
+```go
+import "github.com/Rocket-Innovation/mca-engine-sdk/pkg/spider"
+import "github.com/Rocket-Innovation/mca-engine-sdk/pkg/storage"
+```
+
+**mca-bigQuery:**
+```go
+import "github.com/Rocket-Innovation/mca-engine-sdk/pkg/spider"
+```
+
+**Version Management:**
+- Services specify SDK version in go.mod
+- Breaking changes require major version bump
+- Feature additions use minor version increments
+
+**Related Repositories:**
+- **[mca-automation-workflow](../mca-automation-workflow/CLAUDE.md)** - Workflow execution engine
+- **[mca-bigQuery](../mca-bigQuery/CLAUDE.md)** - PostgreSQL query service
+- **[mca-notification](../mca-notification/CLAUDE.md)** - LINE notification worker
+- **[mca-timer](../mca-timer/CLAUDE.md)** - Timer/callback platform (Rust, not using this SDK)
+- **[mca-front-end](../mca-front-end/CLAUDE.md)** - React workflow builder UI
+- **[roc-argocd](../roc-argocd/CLAUDE.md)** - Kubernetes deployment
+
+---
+
+## Recent Changes (This Library)
+
+**v1.3.31+ (2025-11-21):**
+- Execution history tracking support
+- Workflow deduplication integration
+
+**v1.3.17:**
+- Multi-event trigger support
+- Config: `map[string]interface{}` (supports array or string)
+
+**v1.3.14:**
+- Null expression support
+- Enhanced error logging
+
+---
+
+## Documentation
+
+**This Library:**
+- Code examples in `cmd/` directory
+- Swagger docs at `/swagger/` (when running API)
+
+**Platform-Wide:**
+- **[../mca-document/](../mca-document/)** - All cross-platform documentation
