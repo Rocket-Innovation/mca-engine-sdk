@@ -13,20 +13,35 @@ func getEnv() string {
 	return env
 }
 
-// GetWorkflowEventsTopic returns topic name based on environment
-// Topics: mca.workflow.events.local, mca.workflow.events.uat, mca.workflow.events.prod
+// GetWorkflowNodesTopic returns topic name for node executions (entered/exited)
+// Topics: mca.workflow.nodes.local, mca.workflow.nodes.uat, mca.workflow.nodes.prod
+func GetWorkflowNodesTopic() string {
+	return fmt.Sprintf("mca.workflow.nodes.%s", getEnv())
+}
+
+// GetWorkflowExecutionsTopic returns topic name for workflow executions (started/completed/exited)
+// Topics: mca.workflow.executions.local, mca.workflow.executions.uat, mca.workflow.executions.prod
+func GetWorkflowExecutionsTopic() string {
+	return fmt.Sprintf("mca.workflow.executions.%s", getEnv())
+}
+
+// GetWorkflowActionsTopic returns topic name for action executions (notifications, etc.)
+// Topics: mca.workflow.actions.local, mca.workflow.actions.uat, mca.workflow.actions.prod
+func GetWorkflowActionsTopic() string {
+	return fmt.Sprintf("mca.workflow.actions.%s", getEnv())
+}
+
+// Deprecated: Use GetWorkflowNodesTopic instead
 func GetWorkflowEventsTopic() string {
-	return fmt.Sprintf("mca.workflow.events.%s", getEnv())
+	return GetWorkflowNodesTopic()
 }
 
-// GetWorkflowRecipientsTopic returns topic name for workflow recipients
-// Topics: mca.workflow.recipients.local, mca.workflow.recipients.uat, mca.workflow.recipients.prod
+// Deprecated: Use GetWorkflowExecutionsTopic instead
 func GetWorkflowRecipientsTopic() string {
-	return fmt.Sprintf("mca.workflow.recipients.%s", getEnv())
+	return GetWorkflowExecutionsTopic()
 }
 
-// GetWorkflowNotificationsTopic returns topic name for notification executions
-// Topics: mca.workflow.notifications.local, mca.workflow.notifications.uat, mca.workflow.notifications.prod
+// Deprecated: Use GetWorkflowActionsTopic instead
 func GetWorkflowNotificationsTopic() string {
-	return fmt.Sprintf("mca.workflow.notifications.%s", getEnv())
+	return GetWorkflowActionsTopic()
 }

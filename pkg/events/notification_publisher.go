@@ -70,8 +70,8 @@ func NewNotificationPublisher(brokers []string) *NotificationPublisher {
 
 // NewNotificationPublisherWithAuth creates a new Kafka publisher with SASL authentication
 func NewNotificationPublisherWithAuth(config PublisherConfig) *NotificationPublisher {
-	topic := GetWorkflowNotificationsTopic()
-	log.Printf("[WorkflowNotifications] Publisher initialized for topic: %s", topic)
+	topic := GetWorkflowActionsTopic()
+	log.Printf("[WorkflowActions] Publisher initialized for topic: %s", topic)
 
 	var transport *kafka.Transport
 	if config.Username != "" && config.Password != "" {
@@ -83,7 +83,7 @@ func NewNotificationPublisherWithAuth(config PublisherConfig) *NotificationPubli
 			SASL: mechanism,
 			TLS:  &tls.Config{},
 		}
-		log.Printf("[WorkflowNotifications] Using SASL PLAIN authentication")
+		log.Printf("[WorkflowActions] Using SASL PLAIN authentication")
 	}
 
 	writer := &kafka.Writer{
@@ -104,7 +104,7 @@ func NewNotificationPublisherWithAuth(config PublisherConfig) *NotificationPubli
 func (p *NotificationPublisher) Publish(ctx context.Context, payload *WorkflowNotificationPayload) error {
 	data, err := payload.ToJSON()
 	if err != nil {
-		log.Printf("[WorkflowNotifications] Failed to marshal payload: %v", err)
+		log.Printf("[WorkflowActions] Failed to marshal payload: %v", err)
 		return err
 	}
 
@@ -114,11 +114,11 @@ func (p *NotificationPublisher) Publish(ctx context.Context, payload *WorkflowNo
 	})
 
 	if err != nil {
-		log.Printf("[WorkflowNotifications] Failed to publish event: %v", err)
+		log.Printf("[WorkflowActions] Failed to publish event: %v", err)
 		return err
 	}
 
-	log.Printf("[WorkflowNotifications] Published %s notification for execution %s action %s status %s",
+	log.Printf("[WorkflowActions] Published %s action for execution %s action %s status %s",
 		payload.Channel, payload.SessionID, payload.ActionKey, payload.Status)
 	return nil
 }

@@ -32,8 +32,8 @@ func NewPublisher(brokers []string) *Publisher {
 
 // NewPublisherWithAuth creates a new Kafka publisher with SASL authentication
 func NewPublisherWithAuth(config PublisherConfig) *Publisher {
-	topic := GetWorkflowEventsTopic()
-	log.Printf("[WorkflowEvents] Publisher initialized for topic: %s", topic)
+	topic := GetWorkflowNodesTopic()
+	log.Printf("[WorkflowNodes] Publisher initialized for topic: %s", topic)
 
 	// Configure transport with TLS and SASL if credentials provided
 	var transport *kafka.Transport
@@ -46,7 +46,7 @@ func NewPublisherWithAuth(config PublisherConfig) *Publisher {
 			SASL: mechanism,
 			TLS:  &tls.Config{},
 		}
-		log.Printf("[WorkflowEvents] Using SASL PLAIN authentication")
+		log.Printf("[WorkflowNodes] Using SASL PLAIN authentication")
 	}
 
 	writer := &kafka.Writer{
@@ -67,7 +67,7 @@ func NewPublisherWithAuth(config PublisherConfig) *Publisher {
 func (p *Publisher) Publish(ctx context.Context, event *WorkflowEventPayload) error {
 	data, err := event.ToJSON()
 	if err != nil {
-		log.Printf("[WorkflowEvents] Failed to marshal event: %v", err)
+		log.Printf("[WorkflowNodes] Failed to marshal event: %v", err)
 		return err
 	}
 
@@ -77,11 +77,11 @@ func (p *Publisher) Publish(ctx context.Context, event *WorkflowEventPayload) er
 	})
 
 	if err != nil {
-		log.Printf("[WorkflowEvents] Failed to publish event: %v", err)
+		log.Printf("[WorkflowNodes] Failed to publish event: %v", err)
 		return err
 	}
 
-	log.Printf("[WorkflowEvents] Published %s for workflow %s session %s action %s",
+	log.Printf("[WorkflowNodes] Published %s for workflow %s session %s action %s",
 		event.EventType, event.WorkflowID, event.SessionID, event.ActionKey)
 	return nil
 }
