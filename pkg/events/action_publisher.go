@@ -11,17 +11,17 @@ import (
 	"github.com/segmentio/kafka-go/sasl/plain"
 )
 
-// NotificationChannel represents the notification channel type
-type NotificationChannel string
+// ActionChannel represents the action/notification channel type
+type ActionChannel string
 
 const (
-	NotificationChannelLINE  NotificationChannel = "line"
-	NotificationChannelSlack NotificationChannel = "slack"
-	NotificationChannelEmail NotificationChannel = "email"
-	NotificationChannelSMS   NotificationChannel = "sms"
+	ActionChannelLINE  ActionChannel = "line"
+	ActionChannelSlack ActionChannel = "slack"
+	ActionChannelEmail ActionChannel = "email"
+	ActionChannelSMS   ActionChannel = "sms"
 )
 
-// DeliveryStatus represents the notification delivery status
+// DeliveryStatus represents the delivery status
 type DeliveryStatus string
 
 const (
@@ -31,20 +31,20 @@ const (
 	DeliveryStatusBounced   DeliveryStatus = "bounced"
 )
 
-// WorkflowNotificationPayload is the message structure for notification executions Kafka topic
-type WorkflowNotificationPayload struct {
-	TenantID         string                 `json:"tenant_id,omitempty"` // Tenant ID for multi-tenancy
-	SessionID        string                 `json:"session_id"`          // Session/execution ID
-	WorkflowID       string                 `json:"workflow_id"`         // For lookups
-	RecipientID      string                 `json:"recipient_id"`        // For linking
-	ActionKey        string                 `json:"action_key"`          // Node key (a1, a2, etc.)
-	ActionID         string                 `json:"action_id"`           // line-action, slack-action, etc.
+// ActionExecutionPayload is the message structure for action executions Kafka topic (mca.workflow.actions.{env})
+type ActionExecutionPayload struct {
+	TenantID         string                 `json:"tenant_id,omitempty"`
+	SessionID        string                 `json:"session_id"`
+	WorkflowID       string                 `json:"workflow_id"`
+	RecipientID      string                 `json:"recipient_id"`
+	ActionKey        string                 `json:"action_key"`
+	ActionID         string                 `json:"action_id"`
 	ActionLabel      string                 `json:"action_label,omitempty"`
-	Channel          NotificationChannel    `json:"channel"`             // line, slack, email, sms
+	Channel          ActionChannel          `json:"channel"`
 	MessageContent   string                 `json:"message_content,omitempty"`
 	HasTrackingLink  bool                   `json:"has_tracking_link"`
-	DeliveryStatus   DeliveryStatus         `json:"delivery_status"`     // sent, delivered, failed, bounced
-	Status           string                 `json:"status"`              // success, failed (execution status)
+	DeliveryStatus   DeliveryStatus         `json:"delivery_status"`
+	Status           string                 `json:"status"` // success, failed
 	ErrorMessage     string                 `json:"error_message,omitempty"`
 	ProviderResponse map[string]interface{} `json:"provider_response,omitempty"`
 	EventTime        time.Time              `json:"event_time"`
@@ -52,27 +52,27 @@ type WorkflowNotificationPayload struct {
 }
 
 // ToJSON converts payload to JSON bytes
-func (p *WorkflowNotificationPayload) ToJSON() ([]byte, error) {
+func (p *ActionExecutionPayload) ToJSON() ([]byte, error) {
 	return json.Marshal(p)
 }
 
-// NotificationPublisher publishes notification execution events to Kafka
-type NotificationPublisher struct {
+// ActionPublisher publishes action execution events to Kafka (mca.workflow.actions.{env})
+type ActionPublisher struct {
 	writer *kafka.Writer
 	topic  string
 }
 
-// NewNotificationPublisher creates a new Kafka publisher for notification events (no auth)
-func NewNotificationPublisher(brokers []string) *NotificationPublisher {
-	return NewNotificationPublisherWithAuth(PublisherConfig{
+// NewActionPublisher creates a new Kafka publisher for action events (no auth)
+func NewActionPublisher(brokers []string) *ActionPublisher {
+	return NewActionPublisherWithAuth(PublisherConfig{
 		Brokers: brokers,
 	})
 }
 
-// NewNotificationPublisherWithAuth creates a new Kafka publisher with SASL authentication
-func NewNotificationPublisherWithAuth(config PublisherConfig) *NotificationPublisher {
+// NewActionPublisherWithAuth creates a new Kafka publisher with SASL authentication
+func NewActionPublisherWithAuth(config PublisherConfig) *ActionPublisher {
 	topic := GetWorkflowActionsTopic()
-	log.Printf("[WorkflowActions] Publisher initialized for topic: %s", topic)
+	log.Printf("[WorkflowActions] ActionPublisher initialized for topic: %s", topic)
 
 	var transport *kafka.Transport
 	if config.Username != "" && config.Password != "" {
@@ -95,14 +95,14 @@ func NewNotificationPublisherWithAuth(config PublisherConfig) *NotificationPubli
 		Transport:    transport,
 	}
 
-	return &NotificationPublisher{
+	return &ActionPublisher{
 		writer: writer,
 		topic:  topic,
 	}
 }
 
-// Publish sends a notification event to Kafka
-func (p *NotificationPublisher) Publish(ctx context.Context, payload *WorkflowNotificationPayload) error {
+// Publish sends an action execution event to Kafka
+func (p *ActionPublisher) Publish(ctx context.Context, payload *ActionExecutionPayload) error {
 	data, err := payload.ToJSON()
 	if err != nil {
 		log.Printf("[WorkflowActions] Failed to marshal payload: %v", err)
@@ -119,22 +119,22 @@ func (p *NotificationPublisher) Publish(ctx context.Context, payload *WorkflowNo
 		return err
 	}
 
-	log.Printf("[WorkflowActions] Published %s action for execution %s action %s status %s",
+	log.Printf("[WorkflowActions] Published %s action for session %s action %s status %s",
 		payload.Channel, payload.SessionID, payload.ActionKey, payload.Status)
 	return nil
 }
 
-// PublishSuccess publishes a successful notification execution
-func (p *NotificationPublisher) PublishSuccess(
+// PublishSuccess publishes a successful action execution
+func (p *ActionPublisher) PublishSuccess(
 	ctx context.Context,
 	tenantID, sessionID, workflowID, recipientID string,
 	actionKey, actionID string,
-	channel NotificationChannel,
+	channel ActionChannel,
 	messageContent string,
 	hasTrackingLink bool,
 ) error {
 	now := time.Now()
-	payload := &WorkflowNotificationPayload{
+	payload := &ActionExecutionPayload{
 		TenantID:        tenantID,
 		SessionID:       sessionID,
 		WorkflowID:      workflowID,
@@ -152,16 +152,16 @@ func (p *NotificationPublisher) PublishSuccess(
 	return p.Publish(ctx, payload)
 }
 
-// PublishFailed publishes a failed notification execution
-func (p *NotificationPublisher) PublishFailed(
+// PublishFailed publishes a failed action execution
+func (p *ActionPublisher) PublishFailed(
 	ctx context.Context,
 	tenantID, sessionID, workflowID, recipientID string,
 	actionKey, actionID string,
-	channel NotificationChannel,
+	channel ActionChannel,
 	errorMessage string,
 ) error {
 	now := time.Now()
-	payload := &WorkflowNotificationPayload{
+	payload := &ActionExecutionPayload{
 		TenantID:       tenantID,
 		SessionID:      sessionID,
 		WorkflowID:     workflowID,
@@ -179,7 +179,7 @@ func (p *NotificationPublisher) PublishFailed(
 }
 
 // Close closes the Kafka writer
-func (p *NotificationPublisher) Close() error {
+func (p *ActionPublisher) Close() error {
 	if p.writer != nil {
 		return p.writer.Close()
 	}
