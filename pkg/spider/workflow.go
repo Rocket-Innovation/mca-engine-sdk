@@ -15,6 +15,7 @@ import (
 // EventPublisher interface for publishing workflow events
 type EventPublisher interface {
 	PublishWorkflowStarted(ctx context.Context, tenantID, workflowID, workflowName, sessionID string, recipientID string, recipientType events.RecipientType, actionKey, actionID string, payload map[string]interface{}) error
+	PublishWorkflowCompleted(ctx context.Context, tenantID, workflowID, workflowName, sessionID string, recipientID string, recipientType events.RecipientType) error
 	PublishEntered(ctx context.Context, tenantID, workflowID, workflowName, sessionID, taskID string, recipientID string, recipientType events.RecipientType, actionKey, actionID string) error
 	PublishExitedSuccess(ctx context.Context, tenantID, workflowID, workflowName, sessionID, taskID string, recipientID string, recipientType events.RecipientType, actionKey, actionID string, payload map[string]interface{}) error
 	PublishExitedFailed(ctx context.Context, tenantID, workflowID, workflowName, sessionID, taskID string, recipientID string, recipientType events.RecipientType, actionKey, actionID string, errorMessage string) error
@@ -496,6 +497,27 @@ func (w *Workflow) listenOutputMessages(ctx context.Context) error {
 
 		if err != nil {
 			return err
+		}
+
+		// If no dependencies, this is a terminal node - workflow is completed
+		if len(deps) == 0 && w.publisher != nil {
+			err = w.publisher.PublishWorkflowCompleted(
+				c.Context,
+				m.TenantID,
+				m.WorkflowID,
+				workflow.Name,
+				m.SessionID,
+				recipientID,
+				recipientType,
+			)
+			if err != nil {
+				slog.Error("failed to publish workflow_completed event", slog.String("error", err.Error()))
+			} else {
+				slog.Info("workflow completed",
+					slog.String("workflow_id", m.WorkflowID),
+					slog.String("session_id", m.SessionID),
+				)
+			}
 		}
 
 		return nil
