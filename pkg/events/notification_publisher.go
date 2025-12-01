@@ -33,17 +33,18 @@ const (
 
 // WorkflowNotificationPayload is the message structure for notification executions Kafka topic
 type WorkflowNotificationPayload struct {
-	SessionID      string                 `json:"session_id"`      // Session/execution ID
-	WorkflowID       string                 `json:"workflow_id"`       // For lookups
-	RecipientID      string                 `json:"recipient_id"`      // For linking
-	ActionKey        string                 `json:"action_key"`        // Node key (a1, a2, etc.)
-	ActionID         string                 `json:"action_id"`         // line-action, slack-action, etc.
+	TenantID         string                 `json:"tenant_id,omitempty"` // Tenant ID for multi-tenancy
+	SessionID        string                 `json:"session_id"`          // Session/execution ID
+	WorkflowID       string                 `json:"workflow_id"`         // For lookups
+	RecipientID      string                 `json:"recipient_id"`        // For linking
+	ActionKey        string                 `json:"action_key"`          // Node key (a1, a2, etc.)
+	ActionID         string                 `json:"action_id"`           // line-action, slack-action, etc.
 	ActionLabel      string                 `json:"action_label,omitempty"`
-	Channel          NotificationChannel    `json:"channel"`           // line, slack, email, sms
+	Channel          NotificationChannel    `json:"channel"`             // line, slack, email, sms
 	MessageContent   string                 `json:"message_content,omitempty"`
 	HasTrackingLink  bool                   `json:"has_tracking_link"`
-	DeliveryStatus   DeliveryStatus         `json:"delivery_status"`   // sent, delivered, failed, bounced
-	Status           string                 `json:"status"`            // success, failed (execution status)
+	DeliveryStatus   DeliveryStatus         `json:"delivery_status"`     // sent, delivered, failed, bounced
+	Status           string                 `json:"status"`              // success, failed (execution status)
 	ErrorMessage     string                 `json:"error_message,omitempty"`
 	ProviderResponse map[string]interface{} `json:"provider_response,omitempty"`
 	EventTime        time.Time              `json:"event_time"`
@@ -126,7 +127,7 @@ func (p *NotificationPublisher) Publish(ctx context.Context, payload *WorkflowNo
 // PublishSuccess publishes a successful notification execution
 func (p *NotificationPublisher) PublishSuccess(
 	ctx context.Context,
-	sessionID, workflowID, recipientID string,
+	tenantID, sessionID, workflowID, recipientID string,
 	actionKey, actionID string,
 	channel NotificationChannel,
 	messageContent string,
@@ -134,7 +135,8 @@ func (p *NotificationPublisher) PublishSuccess(
 ) error {
 	now := time.Now()
 	payload := &WorkflowNotificationPayload{
-		SessionID:     sessionID,
+		TenantID:        tenantID,
+		SessionID:       sessionID,
 		WorkflowID:      workflowID,
 		RecipientID:     recipientID,
 		ActionKey:       actionKey,
@@ -153,14 +155,15 @@ func (p *NotificationPublisher) PublishSuccess(
 // PublishFailed publishes a failed notification execution
 func (p *NotificationPublisher) PublishFailed(
 	ctx context.Context,
-	sessionID, workflowID, recipientID string,
+	tenantID, sessionID, workflowID, recipientID string,
 	actionKey, actionID string,
 	channel NotificationChannel,
 	errorMessage string,
 ) error {
 	now := time.Now()
 	payload := &WorkflowNotificationPayload{
-		SessionID:    sessionID,
+		TenantID:       tenantID,
+		SessionID:      sessionID,
 		WorkflowID:     workflowID,
 		RecipientID:    recipientID,
 		ActionKey:      actionKey,
