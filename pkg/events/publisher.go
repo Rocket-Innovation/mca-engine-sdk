@@ -94,8 +94,8 @@ func (p *Publisher) Publish(ctx context.Context, event *WorkflowEventPayload) er
 	}
 
 	// Route to the appropriate writer based on event type
-	// Workflow-level events: started, completed, exited (with ExecutionStatus)
-	// Node-level events: entered, exited (with Status for success/failed)
+	// Workflow-level events: started, completed, exited (no TaskID)
+	// Node-level events: entered, exited (has TaskID)
 	var writer *kafka.Writer
 	var topicName string
 	switch event.EventType {
@@ -105,9 +105,9 @@ func (p *Publisher) Publish(ctx context.Context, event *WorkflowEventPayload) er
 		topicName = p.executionsTopic
 	case EventTypeExited:
 		// "exited" can be workflow-level or node-level
-		// Workflow-level exited has ExecutionStatus set (timeout/manual/failed)
-		// Node-level exited has Status set (success/failed)
-		if event.ExecutionStatus != "" {
+		// Workflow-level exited: no TaskID (from PublishWorkflowExited)
+		// Node-level exited: has TaskID (from PublishExited)
+		if event.TaskID == "" {
 			// Workflow exited (timeout/manual/failed)
 			writer = p.executionsWriter
 			topicName = p.executionsTopic
@@ -204,21 +204,22 @@ func (p *Publisher) PublishExited(
 ) error {
 	now := time.Now()
 	event := &WorkflowEventPayload{
-		TenantID:      tenantID,
-		WorkflowID:    workflowID,
-		WorkflowName:  workflowName,
-		SessionID:     sessionID,
-		TaskID:        taskID,
-		RecipientID:   recipientID,
-		RecipientType: recipientType,
-		EventType:     EventTypeExited,
-		ActionKey:     actionKey,
-		ActionID:      actionID,
-		Status:        status,
-		ErrorMessage:  errorMessage,
-		Payload:       payload,
-		EventTime:     now,
-		Timestamp:     now,
+		TenantID:        tenantID,
+		WorkflowID:      workflowID,
+		WorkflowName:    workflowName,
+		SessionID:       sessionID,
+		TaskID:          taskID,
+		RecipientID:     recipientID,
+		RecipientType:   recipientType,
+		EventType:       EventTypeExited,
+		ExecutionStatus: status, // Copy status to execution_status for node exits
+		ActionKey:       actionKey,
+		ActionID:        actionID,
+		Status:          status,
+		ErrorMessage:    errorMessage,
+		Payload:         payload,
+		EventTime:       now,
+		Timestamp:       now,
 	}
 	return p.Publish(ctx, event)
 }
