@@ -61,15 +61,16 @@ type WorkflowEventPayload struct {
 	TenantID        string                 `json:"tenant_id"`
 	WorkflowID      string                 `json:"workflow_id"`
 	WorkflowName    string                 `json:"workflow_name,omitempty"`
-	SessionID       string                 `json:"session_id"`                        // Workflow instance ID (execution_id in DB)
-	TaskID          string                 `json:"task_id,omitempty"`                 // Task ID within session
-	RecipientID     string                 `json:"recipient_id,omitempty"`            // Contact/Order ID (user_id)
-	RecipientType   RecipientType          `json:"recipient_type,omitempty"`          // contacts / orders
+	SessionID       string                 `json:"session_id"`                 // Workflow instance ID (execution_id in DB)
+	TaskID          string                 `json:"task_id,omitempty"`          // Task ID within session
+	RecipientID     string                 `json:"recipient_id,omitempty"`     // Contact/Order ID (user_id)
+	RecipientType   RecipientType          `json:"recipient_type,omitempty"`   // contacts / orders
 	EventType       EventType              `json:"event_type"`
-	ExecutionStatus string                 `json:"execution_status,omitempty"`        // Detailed status (timeout/manual/failed) for workflow exited
-	ActionKey       string                 `json:"action_key,omitempty"`              // Node key (a1, a2, etc.)
-	ActionID        string                 `json:"action_id,omitempty"`               // Action type (query-action, slack-action, etc.)
-	Status          string                 `json:"status,omitempty"`                  // success / failed (for node exited events)
+	ExecutionStatus string                 `json:"execution_status,omitempty"` // Detailed status (timeout/manual/failed) for workflow exited
+	ActionKey       string                 `json:"action_key,omitempty"`       // Node key (a1, a2, etc.)
+	ActionID        string                 `json:"action_id,omitempty"`        // Action type (query-action, slack-action, etc.)
+	ActionLabel     string                 `json:"action_label,omitempty"`     // Node display name
+	Status          string                 `json:"status,omitempty"`           // success / failed (for node exited events)
 	Payload         map[string]interface{} `json:"payload,omitempty"`
 	ErrorMessage    string                 `json:"error_message,omitempty"`
 	EventTime       time.Time              `json:"event_time"`

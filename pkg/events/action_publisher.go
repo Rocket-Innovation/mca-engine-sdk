@@ -32,19 +32,22 @@ const (
 )
 
 // ActionExecutionPayload is the message structure for action executions Kafka topic (mca.workflow.actions.{env})
+// Field names aligned with REPORT_DB.md
 type ActionExecutionPayload struct {
 	TenantID         string                 `json:"tenant_id,omitempty"`
-	SessionID        string                 `json:"session_id"`
 	WorkflowID       string                 `json:"workflow_id"`
+	SessionID        string                 `json:"session_id"`
 	RecipientID      string                 `json:"recipient_id"`
 	ActionKey        string                 `json:"action_key"`
-	ActionID         string                 `json:"action_id"`
+	ActionID         string                 `json:"action_id,omitempty"`
+	ActionType       ActionChannel          `json:"action_type"`           // line, slack, email, sms (was: channel)
 	ActionLabel      string                 `json:"action_label,omitempty"`
-	Channel          ActionChannel          `json:"channel"`
 	MessageContent   string                 `json:"message_content,omitempty"`
 	HasTrackingLink  bool                   `json:"has_tracking_link"`
-	DeliveryStatus   DeliveryStatus         `json:"delivery_status"`
-	Status           string                 `json:"status"` // success, failed
+	TrackingLink     string                 `json:"tracking_link,omitempty"`  // Generated tracking URL
+	OriginalLink     string                 `json:"original_link,omitempty"`  // Original destination URL
+	DeliveryStatus   DeliveryStatus         `json:"delivery_status"`          // pending, sent, delivered, failed, bounced
+	ExecutionStatus  string                 `json:"execution_status"`         // success, failed (was: status)
 	ErrorMessage     string                 `json:"error_message,omitempty"`
 	ProviderResponse map[string]interface{} `json:"provider_response,omitempty"`
 	EventTime        time.Time              `json:"event_time"`
@@ -120,7 +123,7 @@ func (p *ActionPublisher) Publish(ctx context.Context, payload *ActionExecutionP
 	}
 
 	log.Printf("[WorkflowActions] Published %s action for session %s action %s status %s",
-		payload.Channel, payload.SessionID, payload.ActionKey, payload.Status)
+		payload.ActionType, payload.SessionID, payload.ActionKey, payload.ExecutionStatus)
 	return nil
 }
 
@@ -129,23 +132,23 @@ func (p *ActionPublisher) PublishSuccess(
 	ctx context.Context,
 	tenantID, sessionID, workflowID, recipientID string,
 	actionKey, actionID string,
-	channel ActionChannel,
+	actionType ActionChannel,
 	messageContent string,
 	hasTrackingLink bool,
 ) error {
 	now := time.Now()
 	payload := &ActionExecutionPayload{
 		TenantID:        tenantID,
-		SessionID:       sessionID,
 		WorkflowID:      workflowID,
+		SessionID:       sessionID,
 		RecipientID:     recipientID,
 		ActionKey:       actionKey,
 		ActionID:        actionID,
-		Channel:         channel,
+		ActionType:      actionType,
 		MessageContent:  messageContent,
 		HasTrackingLink: hasTrackingLink,
 		DeliveryStatus:  DeliveryStatusDelivered,
-		Status:          "success",
+		ExecutionStatus: "success",
 		EventTime:       now,
 		Timestamp:       now,
 	}
@@ -157,23 +160,23 @@ func (p *ActionPublisher) PublishFailed(
 	ctx context.Context,
 	tenantID, sessionID, workflowID, recipientID string,
 	actionKey, actionID string,
-	channel ActionChannel,
+	actionType ActionChannel,
 	errorMessage string,
 ) error {
 	now := time.Now()
 	payload := &ActionExecutionPayload{
-		TenantID:       tenantID,
-		SessionID:      sessionID,
-		WorkflowID:     workflowID,
-		RecipientID:    recipientID,
-		ActionKey:      actionKey,
-		ActionID:       actionID,
-		Channel:        channel,
-		DeliveryStatus: DeliveryStatusFailed,
-		Status:         "failed",
-		ErrorMessage:   errorMessage,
-		EventTime:      now,
-		Timestamp:      now,
+		TenantID:        tenantID,
+		WorkflowID:      workflowID,
+		SessionID:       sessionID,
+		RecipientID:     recipientID,
+		ActionKey:       actionKey,
+		ActionID:        actionID,
+		ActionType:      actionType,
+		DeliveryStatus:  DeliveryStatusFailed,
+		ExecutionStatus: "failed",
+		ErrorMessage:    errorMessage,
+		EventTime:       now,
+		Timestamp:       now,
 	}
 	return p.Publish(ctx, payload)
 }
