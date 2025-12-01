@@ -30,18 +30,3 @@ func GetWorkflowExecutionsTopic() string {
 func GetWorkflowActionsTopic() string {
 	return fmt.Sprintf("mca.workflow.actions.%s", getEnv())
 }
-
-// Deprecated: Use GetWorkflowNodesTopic instead
-func GetWorkflowEventsTopic() string {
-	return GetWorkflowNodesTopic()
-}
-
-// Deprecated: Use GetWorkflowExecutionsTopic instead
-func GetWorkflowRecipientsTopic() string {
-	return GetWorkflowExecutionsTopic()
-}
-
-// Deprecated: Use GetWorkflowActionsTopic instead
-func GetWorkflowNotificationsTopic() string {
-	return GetWorkflowActionsTopic()
-}
