@@ -6,7 +6,7 @@ import (
 )
 
 func getEnv() string {
-	env := os.Getenv("APP_ENV") // local, uat, prod
+	env := os.Getenv("ENVIRONMENT") // local, uat, prod
 	if env == "" {
 		env = "local"
 	}
