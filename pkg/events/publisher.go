@@ -41,16 +41,22 @@ func NewPublisherWithAuth(config PublisherConfig) *Publisher {
 	executionsTopic := GetWorkflowExecutionsTopic()
 	log.Printf("[WorkflowEvents] Publisher initialized for topics: nodes=%s, executions=%s", nodesTopic, executionsTopic)
 
-	// Configure transport with TLS and SASL if credentials provided
-	var transport *kafka.Transport
+	// Each writer needs its own Transport instance to avoid connection sharing issues (EOF errors)
+	var nodesTransport, executionsTransport *kafka.Transport
 	if config.Username != "" && config.Password != "" {
-		mechanism := plain.Mechanism{
-			Username: config.Username,
-			Password: config.Password,
+		nodesTransport = &kafka.Transport{
+			SASL: plain.Mechanism{
+				Username: config.Username,
+				Password: config.Password,
+			},
+			TLS: &tls.Config{},
 		}
-		transport = &kafka.Transport{
-			SASL: mechanism,
-			TLS:  &tls.Config{},
+		executionsTransport = &kafka.Transport{
+			SASL: plain.Mechanism{
+				Username: config.Username,
+				Password: config.Password,
+			},
+			TLS: &tls.Config{},
 		}
 		log.Printf("[WorkflowEvents] Using SASL PLAIN authentication")
 	}
@@ -60,7 +66,7 @@ func NewPublisherWithAuth(config PublisherConfig) *Publisher {
 		Topic:        nodesTopic,
 		Balancer:     &kafka.LeastBytes{},
 		BatchTimeout: 10 * time.Millisecond, // Low latency
-		Transport:    transport,
+		Transport:    nodesTransport,
 	}
 
 	executionsWriter := &kafka.Writer{
@@ -68,7 +74,7 @@ func NewPublisherWithAuth(config PublisherConfig) *Publisher {
 		Topic:        executionsTopic,
 		Balancer:     &kafka.LeastBytes{},
 		BatchTimeout: 10 * time.Millisecond, // Low latency
-		Transport:    transport,
+		Transport:    executionsTransport,
 	}
 
 	return &Publisher{
