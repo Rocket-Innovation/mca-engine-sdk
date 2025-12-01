@@ -94,14 +94,29 @@ func (p *Publisher) Publish(ctx context.Context, event *WorkflowEventPayload) er
 	}
 
 	// Route to the appropriate writer based on event type
+	// Workflow-level events: started, completed, exited (with ExecutionStatus)
+	// Node-level events: entered, exited (with Status for success/failed)
 	var writer *kafka.Writer
 	var topicName string
 	switch event.EventType {
-	case EventTypeWorkflowStarted, EventTypeWorkflowCompleted, EventTypeWorkflowFailed:
+	case EventTypeStarted, EventTypeCompleted:
 		// Workflow-level events go to executions topic
 		writer = p.executionsWriter
 		topicName = p.executionsTopic
-	case EventTypeEntered, EventTypeExited:
+	case EventTypeExited:
+		// "exited" can be workflow-level or node-level
+		// Workflow-level exited has ExecutionStatus set (timeout/manual/failed)
+		// Node-level exited has Status set (success/failed)
+		if event.ExecutionStatus != "" {
+			// Workflow exited (timeout/manual/failed)
+			writer = p.executionsWriter
+			topicName = p.executionsTopic
+		} else {
+			// Node exited (success/failed)
+			writer = p.nodesWriter
+			topicName = p.nodesTopic
+		}
+	case EventTypeEntered:
 		// Node-level events go to nodes topic
 		writer = p.nodesWriter
 		topicName = p.nodesTopic
@@ -142,7 +157,7 @@ func (p *Publisher) PublishWorkflowStarted(
 		SessionID:     sessionID,
 		RecipientID:   recipientID,
 		RecipientType: recipientType,
-		EventType:     EventTypeWorkflowStarted,
+		EventType:     EventTypeStarted,
 		ActionKey:     actionKey,
 		ActionID:      actionID,
 		Payload:       payload,
@@ -246,32 +261,34 @@ func (p *Publisher) PublishWorkflowCompleted(
 		SessionID:     sessionID,
 		RecipientID:   recipientID,
 		RecipientType: recipientType,
-		EventType:     EventTypeWorkflowCompleted,
+		EventType:     EventTypeCompleted,
 		EventTime:     now,
 		Timestamp:     now,
 	}
 	return p.Publish(ctx, event)
 }
 
-// PublishWorkflowFailed publishes workflow failed event
-func (p *Publisher) PublishWorkflowFailed(
+// PublishWorkflowExited publishes workflow exited event (timeout/manual/failed)
+func (p *Publisher) PublishWorkflowExited(
 	ctx context.Context,
 	tenantID, workflowID, workflowName, sessionID string,
 	recipientID string, recipientType RecipientType,
+	executionStatus string, // "timeout", "manual", "failed"
 	errorMessage string,
 ) error {
 	now := time.Now()
 	event := &WorkflowEventPayload{
-		TenantID:      tenantID,
-		WorkflowID:    workflowID,
-		WorkflowName:  workflowName,
-		SessionID:     sessionID,
-		RecipientID:   recipientID,
-		RecipientType: recipientType,
-		EventType:     EventTypeWorkflowFailed,
-		ErrorMessage:  errorMessage,
-		EventTime:     now,
-		Timestamp:     now,
+		TenantID:        tenantID,
+		WorkflowID:      workflowID,
+		WorkflowName:    workflowName,
+		SessionID:       sessionID,
+		RecipientID:     recipientID,
+		RecipientType:   recipientType,
+		EventType:       EventTypeExited,
+		ExecutionStatus: executionStatus,
+		ErrorMessage:    errorMessage,
+		EventTime:       now,
+		Timestamp:       now,
 	}
 	return p.Publish(ctx, event)
 }
