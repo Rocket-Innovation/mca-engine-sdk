@@ -11,9 +11,14 @@ import (
 )
 
 // Publisher publishes workflow events to Kafka
+// It uses separate writers for different event types:
+// - nodesWriter: for node entered/exited events -> mca.workflow.nodes.{env}
+// - executionsWriter: for workflow started/completed/exited events -> mca.workflow.executions.{env}
 type Publisher struct {
-	writer *kafka.Writer
-	topic  string
+	nodesWriter      *kafka.Writer
+	executionsWriter *kafka.Writer
+	nodesTopic       string
+	executionsTopic  string
 }
 
 // PublisherConfig holds configuration for the Kafka publisher
@@ -32,8 +37,9 @@ func NewPublisher(brokers []string) *Publisher {
 
 // NewPublisherWithAuth creates a new Kafka publisher with SASL authentication
 func NewPublisherWithAuth(config PublisherConfig) *Publisher {
-	topic := GetWorkflowNodesTopic()
-	log.Printf("[WorkflowNodes] Publisher initialized for topic: %s", topic)
+	nodesTopic := GetWorkflowNodesTopic()
+	executionsTopic := GetWorkflowExecutionsTopic()
+	log.Printf("[WorkflowEvents] Publisher initialized for topics: nodes=%s, executions=%s", nodesTopic, executionsTopic)
 
 	// Configure transport with TLS and SASL if credentials provided
 	var transport *kafka.Transport
@@ -46,43 +52,71 @@ func NewPublisherWithAuth(config PublisherConfig) *Publisher {
 			SASL: mechanism,
 			TLS:  &tls.Config{},
 		}
-		log.Printf("[WorkflowNodes] Using SASL PLAIN authentication")
+		log.Printf("[WorkflowEvents] Using SASL PLAIN authentication")
 	}
 
-	writer := &kafka.Writer{
+	nodesWriter := &kafka.Writer{
 		Addr:         kafka.TCP(config.Brokers...),
-		Topic:        topic,
+		Topic:        nodesTopic,
+		Balancer:     &kafka.LeastBytes{},
+		BatchTimeout: 10 * time.Millisecond, // Low latency
+		Transport:    transport,
+	}
+
+	executionsWriter := &kafka.Writer{
+		Addr:         kafka.TCP(config.Brokers...),
+		Topic:        executionsTopic,
 		Balancer:     &kafka.LeastBytes{},
 		BatchTimeout: 10 * time.Millisecond, // Low latency
 		Transport:    transport,
 	}
 
 	return &Publisher{
-		writer: writer,
-		topic:  topic,
+		nodesWriter:      nodesWriter,
+		executionsWriter: executionsWriter,
+		nodesTopic:       nodesTopic,
+		executionsTopic:  executionsTopic,
 	}
 }
 
-// Publish sends an event to Kafka
+// Publish sends an event to the appropriate Kafka topic based on event type
 func (p *Publisher) Publish(ctx context.Context, event *WorkflowEventPayload) error {
 	data, err := event.ToJSON()
 	if err != nil {
-		log.Printf("[WorkflowNodes] Failed to marshal event: %v", err)
+		log.Printf("[WorkflowEvents] Failed to marshal event: %v", err)
 		return err
 	}
 
-	err = p.writer.WriteMessages(ctx, kafka.Message{
+	// Route to the appropriate writer based on event type
+	var writer *kafka.Writer
+	var topicName string
+	switch event.EventType {
+	case EventTypeWorkflowStarted, EventTypeWorkflowCompleted, EventTypeWorkflowFailed:
+		// Workflow-level events go to executions topic
+		writer = p.executionsWriter
+		topicName = p.executionsTopic
+	case EventTypeEntered, EventTypeExited:
+		// Node-level events go to nodes topic
+		writer = p.nodesWriter
+		topicName = p.nodesTopic
+	default:
+		// Default to nodes topic for unknown event types
+		writer = p.nodesWriter
+		topicName = p.nodesTopic
+	}
+
+	err = writer.WriteMessages(ctx, kafka.Message{
 		Key:   []byte(event.SessionID), // Partition by session (instance)
 		Value: data,
 	})
 
 	if err != nil {
-		log.Printf("[WorkflowNodes] Failed to publish event: %v", err)
+		log.Printf("[WorkflowEvents] Failed to publish event to %s: %v", topicName, err)
 		return err
 	}
 
-	log.Printf("[WorkflowNodes] Published %s for workflow %s session %s action %s",
-		event.EventType, event.WorkflowID, event.SessionID, event.ActionKey)
+	log.Printf("[WorkflowEvents] Published %s to %s for workflow %s session %s action %s",
+		event.EventType, topicName, event.WorkflowID, event.SessionID, event.ActionKey)
 	return nil
 }
 
@@ -236,10 +270,21 @@ func (p *Publisher) PublishWorkflowFailed(
 	return p.Publish(ctx, event)
 }
 
-// Close closes the Kafka writer
+// Close closes all Kafka writers
 func (p *Publisher) Close() error {
-	if p.writer != nil {
-		return p.writer.Close()
+	var errs []error
+	if p.nodesWriter != nil {
+		if err := p.nodesWriter.Close(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if p.executionsWriter != nil {
+		if err := p.executionsWriter.Close(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) > 0 {
+		return errs[0]
 	}
 	return nil
 }
