@@ -129,7 +129,81 @@ func (p *ActionPublisher) Publish(ctx context.Context, payload *ActionExecutionP
 	return nil
 }
 
+// PublishSent publishes an action_sent event (message sent to provider)
+func (p *ActionPublisher) PublishSent(
+	ctx context.Context,
+	tenantID, sessionID, workflowID, recipientID string,
+	nodeID, nodeName string,
+	actionKey, actionID, actionLabel string,
+	actionType ActionChannel,
+	messageContent string,
+	hasTrackingLink bool,
+	success bool, // true = sent successfully, false = send failed
+	errorMessage string, // only if success=false
+) error {
+	now := time.Now()
+
+	deliveryStatus := DeliveryStatusSent
+	executionStatus := "success"
+	if !success {
+		deliveryStatus = DeliveryStatusFailed
+		executionStatus = "failed"
+	}
+
+	payload := &ActionExecutionPayload{
+		TenantID:        tenantID,
+		WorkflowID:      workflowID,
+		SessionID:       sessionID,
+		RecipientID:     recipientID,
+		NodeID:          nodeID,
+		NodeName:        nodeName,
+		ActionKey:       actionKey,
+		ActionID:        actionID,
+		ActionLabel:     actionLabel,
+		ActionType:      actionType,
+		MessageContent:  messageContent,
+		HasTrackingLink: hasTrackingLink,
+		DeliveryStatus:  deliveryStatus,
+		ExecutionStatus: executionStatus,
+		ErrorMessage:    errorMessage,
+		EventTime:       now,
+		Timestamp:       now,
+	}
+	return p.Publish(ctx, payload)
+}
+
+// PublishDelivered publishes an action_delivered event (delivery confirmed by provider webhook)
+func (p *ActionPublisher) PublishDelivered(
+	ctx context.Context,
+	tenantID, sessionID, workflowID, recipientID string,
+	nodeID, nodeName string,
+	actionKey, actionID, actionLabel string,
+	actionType ActionChannel,
+	providerResponse map[string]interface{},
+) error {
+	now := time.Now()
+	payload := &ActionExecutionPayload{
+		TenantID:         tenantID,
+		WorkflowID:       workflowID,
+		SessionID:        sessionID,
+		RecipientID:      recipientID,
+		NodeID:           nodeID,
+		NodeName:         nodeName,
+		ActionKey:        actionKey,
+		ActionID:         actionID,
+		ActionLabel:      actionLabel,
+		ActionType:       actionType,
+		DeliveryStatus:   DeliveryStatusDelivered,
+		ExecutionStatus:  "success",
+		ProviderResponse: providerResponse,
+		EventTime:        now,
+		Timestamp:        now,
+	}
+	return p.Publish(ctx, payload)
+}
+
 // PublishSuccess publishes a successful action execution
+// Deprecated: Use PublishSent for action_sent events and PublishDelivered for action_delivered events
 func (p *ActionPublisher) PublishSuccess(
 	ctx context.Context,
 	tenantID, sessionID, workflowID, recipientID string,
