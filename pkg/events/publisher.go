@@ -172,7 +172,8 @@ func (p *Publisher) PublishEntered(
 	ctx context.Context,
 	tenantID, workflowID, workflowName, sessionID, taskID string,
 	recipientID string, recipientType RecipientType,
-	actionKey, actionID string,
+	nodeID, nodeName string, // NEW: from workflow definition
+	actionKey, actionID, actionLabel string,
 ) error {
 	now := time.Now()
 	event := &WorkflowEventPayload{
@@ -184,8 +185,11 @@ func (p *Publisher) PublishEntered(
 		RecipientID:   recipientID,
 		RecipientType: recipientType,
 		EventType:     EventTypeEntered,
+		NodeID:        nodeID,      // NEW
+		NodeName:      nodeName,    // NEW
 		ActionKey:     actionKey,
 		ActionID:      actionID,
+		ActionLabel:   actionLabel, // For backward compatibility
 		EventTime:     now,
 		Timestamp:     now,
 	}
@@ -197,7 +201,8 @@ func (p *Publisher) PublishExited(
 	ctx context.Context,
 	tenantID, workflowID, workflowName, sessionID, taskID string,
 	recipientID string, recipientType RecipientType,
-	actionKey, actionID string,
+	nodeID, nodeName string, // NEW: from workflow definition
+	actionKey, actionID, actionLabel string,
 	status string, // "success" or "failed"
 	errorMessage string,
 	payload map[string]interface{},
@@ -212,9 +217,12 @@ func (p *Publisher) PublishExited(
 		RecipientID:     recipientID,
 		RecipientType:   recipientType,
 		EventType:       EventTypeExited,
-		ExecutionStatus: status, // Copy status to execution_status for node exits
+		ExecutionStatus: status, // Copy status to execution_status for node exits (for node_executions table)
+		NodeID:          nodeID,      // NEW (for workflow_events table)
+		NodeName:        nodeName,    // NEW (for workflow_events table)
 		ActionKey:       actionKey,
 		ActionID:        actionID,
+		ActionLabel:     actionLabel, // For backward compatibility
 		Status:          status,
 		ErrorMessage:    errorMessage,
 		Payload:         payload,
@@ -229,11 +237,12 @@ func (p *Publisher) PublishExitedSuccess(
 	ctx context.Context,
 	tenantID, workflowID, workflowName, sessionID, taskID string,
 	recipientID string, recipientType RecipientType,
-	actionKey, actionID string,
+	nodeID, nodeName string,
+	actionKey, actionID, actionLabel string,
 	payload map[string]interface{},
 ) error {
 	return p.PublishExited(ctx, tenantID, workflowID, workflowName, sessionID, taskID,
-		recipientID, recipientType, actionKey, actionID, "success", "", payload)
+		recipientID, recipientType, nodeID, nodeName, actionKey, actionID, actionLabel, "success", "", payload)
 }
 
 // PublishExitedFailed is a convenience method for failed exit
@@ -241,11 +250,12 @@ func (p *Publisher) PublishExitedFailed(
 	ctx context.Context,
 	tenantID, workflowID, workflowName, sessionID, taskID string,
 	recipientID string, recipientType RecipientType,
-	actionKey, actionID string,
+	nodeID, nodeName string,
+	actionKey, actionID, actionLabel string,
 	errorMessage string,
 ) error {
 	return p.PublishExited(ctx, tenantID, workflowID, workflowName, sessionID, taskID,
-		recipientID, recipientType, actionKey, actionID, "failed", errorMessage, nil)
+		recipientID, recipientType, nodeID, nodeName, actionKey, actionID, actionLabel, "failed", errorMessage, nil)
 }
 
 // PublishWorkflowCompleted publishes workflow completed event

@@ -66,10 +66,12 @@ type WorkflowEventPayload struct {
 	RecipientID     string                 `json:"recipient_id,omitempty"`     // Contact/Order ID (user_id)
 	RecipientType   RecipientType          `json:"recipient_type,omitempty"`   // contacts / orders
 	EventType       EventType              `json:"event_type"`
-	ExecutionStatus string                 `json:"execution_status,omitempty"` // Detailed status (timeout/manual/failed) for workflow exited
+	ExecutionStatus string                 `json:"execution_status,omitempty"` // Detailed status (timeout/manual/failed) for workflow exited (for node_executions table)
+	NodeID          string                 `json:"node_id,omitempty"`          // Node ID from workflow definition (for workflow_events table)
+	NodeName        string                 `json:"node_name,omitempty"`        // Node display name (for workflow_events table)
 	ActionKey       string                 `json:"action_key,omitempty"`       // Node key (a1, a2, etc.)
 	ActionID        string                 `json:"action_id,omitempty"`        // Action type (query-action, slack-action, etc.)
-	ActionLabel     string                 `json:"action_label,omitempty"`     // Node display name
+	ActionLabel     string                 `json:"action_label,omitempty"`     // Node display name (for node_executions table)
 	Status          string                 `json:"status,omitempty"`           // success / failed (for node exited events)
 	Payload         map[string]interface{} `json:"payload,omitempty"`
 	ErrorMessage    string                 `json:"error_message,omitempty"`
