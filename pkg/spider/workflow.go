@@ -251,16 +251,24 @@ func (w *Workflow) listenTriggerMessages(ctx context.Context) error {
 
 				slog.Info("after marshall next input", slog.Any("nextInputb", string(nextInputb)))
 
+				// Extract node information for worker
+				nodeID := dep.ID
+				nodeName := extractNodeName(&dep)
+				actionLabel := nodeName // Same as node name
+
 				err = w.messenger.SendInputMessage(ctx, InputMessage{
-					SessionID:  sessionID,
-					TaskID:     nextTaskID,
-					TenantID:   dep.TenantID,
-					WorkflowID: dep.WorkflowID,
+					SessionID:   sessionID,
+					TaskID:      nextTaskID,
+					TenantID:    dep.TenantID,
+					WorkflowID:  dep.WorkflowID,
 					// TODO
 					// WorkflowActionID: dep.ID,
-					Key:      dep.Key,
-					ActionID: dep.ActionID,
-					Values:   string(nextInputb),
+					NodeID:      nodeID,      // NEW
+					NodeName:    nodeName,    // NEW
+					Key:         dep.Key,
+					ActionID:    dep.ActionID,
+					ActionLabel: actionLabel, // NEW
+					Values:      string(nextInputb),
 				})
 
 				if err != nil {
@@ -469,16 +477,24 @@ func (w *Workflow) listenOutputMessages(ctx context.Context) error {
 
 				slog.Info("after marshall next input", slog.Any("nextInputb", string(nextInputb)))
 
+				// Extract node information for worker
+				nodeID := dep.ID
+				nodeName := extractNodeName(&dep)
+				actionLabel := nodeName // Same as node name
+
 				err = w.messenger.SendInputMessage(ctx, InputMessage{
-					SessionID:  m.SessionID,
-					TaskID:     nextTaskID,
-					TenantID:   dep.TenantID,
-					WorkflowID: dep.WorkflowID,
+					SessionID:   m.SessionID,
+					TaskID:      nextTaskID,
+					TenantID:    dep.TenantID,
+					WorkflowID:  dep.WorkflowID,
 					// TODO
 					// WorkflowActionID: dep.ID,
-					Key:      dep.Key,
-					ActionID: dep.ActionID,
-					Values:   string(nextInputb),
+					NodeID:      nodeID,      // NEW
+					NodeName:    nodeName,    // NEW
+					Key:         dep.Key,
+					ActionID:    dep.ActionID,
+					ActionLabel: actionLabel, // NEW
+					Values:      string(nextInputb),
 				})
 
 				if err != nil {

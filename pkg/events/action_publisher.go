@@ -38,10 +38,12 @@ type ActionExecutionPayload struct {
 	WorkflowID       string                 `json:"workflow_id"`
 	SessionID        string                 `json:"session_id"`
 	RecipientID      string                 `json:"recipient_id"`
+	NodeID           string                 `json:"node_id,omitempty"`    // NEW - Node ID from workflow definition
+	NodeName         string                 `json:"node_name,omitempty"`  // NEW - Node display name
 	ActionKey        string                 `json:"action_key"`
 	ActionID         string                 `json:"action_id,omitempty"`
 	ActionType       ActionChannel          `json:"action_type"`           // line, slack, email, sms (was: channel)
-	ActionLabel      string                 `json:"action_label,omitempty"`
+	ActionLabel      string                 `json:"action_label,omitempty"` // For backward compatibility
 	MessageContent   string                 `json:"message_content,omitempty"`
 	HasTrackingLink  bool                   `json:"has_tracking_link"`
 	TrackingLink     string                 `json:"tracking_link,omitempty"`  // Generated tracking URL
@@ -131,7 +133,8 @@ func (p *ActionPublisher) Publish(ctx context.Context, payload *ActionExecutionP
 func (p *ActionPublisher) PublishSuccess(
 	ctx context.Context,
 	tenantID, sessionID, workflowID, recipientID string,
-	actionKey, actionID string,
+	nodeID, nodeName string, // NEW - from workflow definition
+	actionKey, actionID, actionLabel string,
 	actionType ActionChannel,
 	messageContent string,
 	hasTrackingLink bool,
@@ -142,8 +145,11 @@ func (p *ActionPublisher) PublishSuccess(
 		WorkflowID:      workflowID,
 		SessionID:       sessionID,
 		RecipientID:     recipientID,
+		NodeID:          nodeID,      // NEW
+		NodeName:        nodeName,    // NEW
 		ActionKey:       actionKey,
 		ActionID:        actionID,
+		ActionLabel:     actionLabel, // For backward compatibility
 		ActionType:      actionType,
 		MessageContent:  messageContent,
 		HasTrackingLink: hasTrackingLink,
@@ -159,7 +165,8 @@ func (p *ActionPublisher) PublishSuccess(
 func (p *ActionPublisher) PublishFailed(
 	ctx context.Context,
 	tenantID, sessionID, workflowID, recipientID string,
-	actionKey, actionID string,
+	nodeID, nodeName string, // NEW - from workflow definition
+	actionKey, actionID, actionLabel string,
 	actionType ActionChannel,
 	errorMessage string,
 ) error {
@@ -169,8 +176,11 @@ func (p *ActionPublisher) PublishFailed(
 		WorkflowID:      workflowID,
 		SessionID:       sessionID,
 		RecipientID:     recipientID,
+		NodeID:          nodeID,      // NEW
+		NodeName:        nodeName,    // NEW
 		ActionKey:       actionKey,
 		ActionID:        actionID,
+		ActionLabel:     actionLabel, // For backward compatibility
 		ActionType:      actionType,
 		DeliveryStatus:  DeliveryStatusFailed,
 		ExecutionStatus: "failed",

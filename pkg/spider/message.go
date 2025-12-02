@@ -12,15 +12,18 @@ type InputMessageContext struct {
 }
 
 type InputMessage struct {
-	SessionID  string
-	TaskID     string
-	TenantID   string
-	WorkflowID string
+	SessionID   string
+	TaskID      string
+	TenantID    string
+	WorkflowID  string
 	// TODO
 	// WorkflowActionID string
-	Key      string
-	ActionID string
-	Values   string
+	NodeID      string // NEW - Node ID from workflow definition
+	NodeName    string // NEW - Node display name
+	Key         string
+	ActionID    string
+	ActionLabel string // NEW - Node display name for backward compatibility
+	Values      string
 }
 
 func (m *InputMessage) ToOutputMessage(metaOutput, values string) OutputMessage {
