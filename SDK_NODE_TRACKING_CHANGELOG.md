@@ -1,7 +1,7 @@
 # SDK Node Tracking Implementation - Changelog
 
 **Date:** 2025-12-02
-**Status:** ✅ SDK Updated
+**Status:** ✅ SDK Updated (v1.16.0)
 **Related:** [mca-document/meeting/IMPLEMENTATION_ROADMAP_DEC_2025.md](../mca-document/meeting/IMPLEMENTATION_ROADMAP_DEC_2025.md)
 
 ---
@@ -15,6 +15,8 @@ Updated mca-engine-sdk to support `node_id` and `node_name` fields in workflow e
 - ✅ Updated `PublishEntered()` to include node tracking
 - ✅ Updated `PublishExited()` to include node tracking
 - ✅ Updated convenience methods `PublishExitedSuccess()` and `PublishExitedFailed()`
+- ✅ Updated internal workflow engine (`pkg/spider/workflow.go`) to use new API
+- ✅ Added `extractNodeName()` helper function
 
 ---
 
@@ -170,14 +172,138 @@ This separation allows us to phase out `action_label` from workflow_events while
 
 ---
 
+### 3. Workflow Engine (Internal)
+**File:** `pkg/spider/workflow.go` ✅ **UPDATED**
+
+#### 3.1 EventPublisher Interface - Lines 16-23
+
+**Updated interface** to match new publisher signatures:
+
+```go
+type EventPublisher interface {
+    PublishWorkflowStarted(...) error
+    PublishWorkflowCompleted(...) error
+    PublishEntered(ctx context.Context, tenantID, workflowID, workflowName, sessionID, taskID string,
+        recipientID string, recipientType events.RecipientType,
+        nodeID, nodeName string, // NEW
+        actionKey, actionID, actionLabel string) error
+    PublishExitedSuccess(ctx context.Context, tenantID, workflowID, workflowName, sessionID, taskID string,
+        recipientID string, recipientType events.RecipientType,
+        nodeID, nodeName string, // NEW
+        actionKey, actionID, actionLabel string, payload map[string]interface{}) error
+    PublishExitedFailed(...) error
+    Close() error
+}
+```
+
+#### 3.2 Node Name Extraction Helper - Lines 648-667
+
+**New helper function** to extract node display name:
+
+```go
+// extractNodeName extracts node display name from WorkflowAction
+// Priority: Meta["name"] > Config["label"] > Key (fallback)
+func extractNodeName(action *WorkflowAction) string {
+    // Try Meta["name"] first
+    if action.Meta != nil {
+        if name, ok := action.Meta["name"]; ok && name != "" {
+            return name
+        }
+    }
+
+    // Try Config["label"] second
+    if action.Config != nil {
+        if label, ok := action.Config["label"].(string); ok && label != "" {
+            return label
+        }
+    }
+
+    // Fallback to action key
+    return action.Key
+}
+```
+
+#### 3.3 Updated Publisher Calls
+
+**Three locations updated** to pass node information:
+
+**Location 1: listenTriggerMessages (lines 271-296)**
+```go
+// Publish entered event
+if w.publisher != nil {
+    // Extract node information from workflow action
+    nodeID := dep.ID
+    nodeName := extractNodeName(&dep)
+    actionLabel := nodeName // Same as node name for backward compatibility
+
+    err = w.publisher.PublishEntered(
+        ctx, dep.TenantID, dep.WorkflowID, workflow.Name,
+        sessionID, nextTaskID,
+        recipientID, recipientType,
+        nodeID, nodeName, // NEW
+        dep.Key, dep.ActionID, actionLabel,
+    )
+}
+```
+
+**Location 2: listenOutputMessages - Exit Event (lines 381-407)**
+```go
+// Publish exited event (action completed successfully)
+if w.publisher != nil {
+    nodeID := workflowAction.ID
+    nodeName := extractNodeName(workflowAction)
+    actionLabel := nodeName
+
+    err = w.publisher.PublishExitedSuccess(
+        c.Context, m.TenantID, m.WorkflowID, workflow.Name,
+        m.SessionID, m.TaskID,
+        recipientID, recipientType,
+        nodeID, nodeName, // NEW
+        m.Key, workflowAction.ActionID, actionLabel,
+        wvalues,
+    )
+}
+```
+
+**Location 3: listenOutputMessages - Next Node (lines 489-514)**
+```go
+// Publish entered event for the next action
+if w.publisher != nil {
+    nodeID := dep.ID
+    nodeName := extractNodeName(&dep)
+    actionLabel := nodeName
+
+    err = w.publisher.PublishEntered(
+        ctx, dep.TenantID, dep.WorkflowID, workflow.Name,
+        m.SessionID, nextTaskID,
+        recipientID, recipientType,
+        nodeID, nodeName, // NEW
+        dep.Key, dep.ActionID, actionLabel,
+    )
+}
+```
+
+---
+
 ## Breaking Changes ⚠️
 
-**YES - Breaking API Changes**
+**Status:** ✅ **RESOLVED - No External Breaking Changes**
 
-All code calling `PublishEntered()`, `PublishExited()`, `PublishExitedSuccess()`, or `PublishExitedFailed()` must be updated to provide:
-- `nodeID` (can use `action.ID` or generate from workflow definition)
-- `nodeName` (can use `action.Meta["name"]` or get from workflow config)
-- `actionLabel` (existing field, pass the node display name)
+### For Workflow Engine Users (mca-automation-workflow)
+**NO CHANGES NEEDED** - The SDK's internal workflow engine (`pkg/spider/workflow.go`) has been updated to automatically extract and pass `node_id` and `node_name` from workflow definitions.
+
+If you use `spider.InitWorkflowWithPublisher()`:
+- ✅ Node tracking works automatically
+- ✅ No code changes required
+- ✅ Update to SDK v1.16.0 via `go get`
+
+### For Direct Publisher Users (e.g., workers, custom services)
+**Breaking Changes Apply** - If you directly instantiate `events.Publisher` and call publisher methods:
+
+You must update calls to `PublishEntered()`, `PublishExited()`, `PublishExitedSuccess()`, or `PublishExitedFailed()` to provide:
+- `nodeID` (from workflow action or worker input)
+- `nodeName` (from workflow action or worker input)
+- `actionLabel` (node display name for backward compatibility)
 
 ---
 
@@ -244,19 +370,17 @@ nodeName := node.Name
 
 ## Next Steps (Required)
 
-### 1. Update Workflow Engine Callers ⏳
+### 1. Update Workflow Engine ✅ **COMPLETE**
 
-**Repository:** `mca-automation-workflow` (if workflow engine lives there)
+**Repository:** `mca-engine-sdk`
 
-Find all code that calls:
-```go
-publisher.PublishEntered(...)
-publisher.PublishExited(...)
-publisher.PublishExitedSuccess(...)
-publisher.PublishExitedFailed(...)
-```
+The workflow engine has been updated to automatically extract `node_id` and `node_name` from workflow definitions:
+- ✅ `EventPublisher` interface updated
+- ✅ Three publisher calls updated
+- ✅ `extractNodeName()` helper function added
+- ✅ Extracts from `WorkflowAction.ID`, `Meta["name"]`, or `Config["label"]`
 
-Update to use new signatures with `nodeID`, `nodeName`, and `actionLabel`.
+**mca-automation-workflow users:** Simply update to SDK v1.16.0, no code changes needed.
 
 ---
 
@@ -364,18 +488,21 @@ go build
 
 ## Summary
 
-✅ **SDK (mca-engine-sdk) - COMPLETE**
+✅ **SDK (mca-engine-sdk) - COMPLETE (v1.16.0)**
 - Event types updated
 - Publisher methods updated
+- Internal workflow engine updated
+- Node extraction helper function added
 - Compiles successfully
 
-⏳ **Workflow Engine - PENDING**
-- Need to update calls to PublishEntered/PublishExited
-- Need to pass node_id and node_name from workflow definition
+✅ **Workflow Engine Integration - COMPLETE**
+- SDK automatically extracts node_id from WorkflowAction.ID
+- SDK automatically extracts node_name from Meta["name"] or Config["label"]
+- No changes needed in mca-automation-workflow
 
-⏳ **Workers - PENDING**
-- Need to receive node_id, node_name from workflow engine
-- Need to use new publisher signatures
+⏳ **Workers - PENDING (Optional)**
+- Workers need to receive node_id, node_name from workflow engine input
+- Only if workers publish events directly (rare)
 
 ---
 
@@ -388,4 +515,5 @@ go build
 ---
 
 **Last Updated:** December 2, 2025
-**Status:** SDK ready, waiting for workflow engine and worker updates
+**Version:** v1.16.0
+**Status:** ✅ SDK and internal workflow engine complete - ready for production use
