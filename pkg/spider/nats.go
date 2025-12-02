@@ -90,28 +90,34 @@ func (n *NatsOutputMessage) ToOutputMessage() OutputMessage {
 }
 
 type NatsInputMessage struct {
-	SessionID  string `json:"session_id"`
-	TaskID     string `json:"task_id"`
-	WorkflowID string `json:"workflow_id"`
-	TenantID   string `json:"tenant_id"`
+	SessionID   string `json:"session_id"`
+	TaskID      string `json:"task_id"`
+	WorkflowID  string `json:"workflow_id"`
+	TenantID    string `json:"tenant_id"`
 	// TODO
 	// WorkflowActionID string `json:"workflow_action_id"`
-	Key      string `json:"key"`
-	ActionID string `json:"action_id"`
-	Values   string `json:"values"`
+	NodeID      string `json:"node_id"`       // NEW - Node ID from workflow definition
+	NodeName    string `json:"node_name"`     // NEW - Node display name
+	Key         string `json:"key"`
+	ActionID    string `json:"action_id"`
+	ActionLabel string `json:"action_label"`  // NEW - Action label for backward compatibility
+	Values      string `json:"values"`
 }
 
 func (n *NatsInputMessage) ToInputMessage() InputMessage {
 	return InputMessage{
-		SessionID:  n.SessionID,
-		TaskID:     n.TaskID,
-		WorkflowID: n.WorkflowID,
-		TenantID:   n.TenantID,
+		SessionID:   n.SessionID,
+		TaskID:      n.TaskID,
+		WorkflowID:  n.WorkflowID,
+		TenantID:    n.TenantID,
 		// TODO
 		// WorkflowActionID: n.WorkflowActionID,
-		Key:      n.Key,
-		ActionID: n.ActionID,
-		Values:   n.Values,
+		NodeID:      n.NodeID,      // NEW
+		NodeName:    n.NodeName,    // NEW
+		Key:         n.Key,
+		ActionID:    n.ActionID,
+		ActionLabel: n.ActionLabel, // NEW
+		Values:      n.Values,
 	}
 }
 

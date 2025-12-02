@@ -293,15 +293,18 @@ func (m *NATSWorkflowMessengerAdapter) SendInputMessage(ctx context.Context, mes
 	subject := buildInputSubject(m.natsStreamPrefix)
 
 	b, err := json.Marshal(NatsInputMessage{
-		SessionID:  message.SessionID,
-		TaskID:     message.TaskID,
-		WorkflowID: message.WorkflowID,
-		TenantID:   message.TenantID,
+		SessionID:   message.SessionID,
+		TaskID:      message.TaskID,
+		WorkflowID:  message.WorkflowID,
+		TenantID:    message.TenantID,
 		// TODO
 		// WorkflowActionID: message.WorkflowActionID,
-		Key:      message.Key,
-		ActionID: message.ActionID,
-		Values:   message.Values,
+		NodeID:      message.NodeID,      // NEW - Node ID from workflow
+		NodeName:    message.NodeName,    // NEW - Node display name
+		Key:         message.Key,
+		ActionID:    message.ActionID,
+		ActionLabel: message.ActionLabel, // NEW - Action label
+		Values:      message.Values,
 	})
 
 	if err != nil {
