@@ -265,6 +265,38 @@ func (p *ActionPublisher) PublishFailed(
 	return p.Publish(ctx, payload)
 }
 
+// PublishLinkOpened publishes a link_opened event when a user clicks a tracking link
+func (p *ActionPublisher) PublishLinkOpened(
+	ctx context.Context,
+	tenantID, sessionID, workflowID, recipientID string,
+	nodeID, nodeName string,
+	actionKey, actionID, actionLabel string,
+	actionType ActionChannel,
+	trackingID, originalLink string,
+) error {
+	now := time.Now()
+	payload := &ActionExecutionPayload{
+		TenantID:        tenantID,
+		WorkflowID:      workflowID,
+		SessionID:       sessionID,
+		RecipientID:     recipientID,
+		NodeID:          nodeID,
+		NodeName:        nodeName,
+		ActionKey:       actionKey,
+		ActionID:        actionID,
+		ActionLabel:     actionLabel,
+		ActionType:      actionType,
+		HasTrackingLink: true,
+		TrackingLink:    trackingID, // Store tracking ID
+		OriginalLink:    originalLink,
+		DeliveryStatus:  DeliveryStatusDelivered,
+		ExecutionStatus: "success",
+		EventTime:       now,
+		Timestamp:       now,
+	}
+	return p.Publish(ctx, payload)
+}
+
 // Close closes the Kafka writer
 func (p *ActionPublisher) Close() error {
 	if p.writer != nil {
