@@ -16,9 +16,9 @@ import (
 type EventPublisher interface {
 	PublishWorkflowStarted(ctx context.Context, tenantID, workflowID, workflowName, sessionID string, recipientID string, recipientType events.RecipientType, actionKey, actionID string, payload map[string]interface{}) error
 	PublishWorkflowCompleted(ctx context.Context, tenantID, workflowID, workflowName, sessionID string, recipientID string, recipientType events.RecipientType) error
-	PublishEntered(ctx context.Context, tenantID, workflowID, workflowName, sessionID, taskID string, recipientID string, recipientType events.RecipientType, nodeID, nodeName string, actionKey, actionID, actionLabel string) error
-	PublishExitedSuccess(ctx context.Context, tenantID, workflowID, workflowName, sessionID, taskID string, recipientID string, recipientType events.RecipientType, nodeID, nodeName string, actionKey, actionID, actionLabel string, payload map[string]interface{}) error
-	PublishExitedFailed(ctx context.Context, tenantID, workflowID, workflowName, sessionID, taskID string, recipientID string, recipientType events.RecipientType, nodeID, nodeName string, actionKey, actionID, actionLabel string, errorMessage string) error
+	PublishEntered(ctx context.Context, tenantID, workflowID, workflowName, sessionID, taskID string, recipientID string, recipientType events.RecipientType, nodeID, nodeName string, actionKey, actionID string) error
+	PublishExitedSuccess(ctx context.Context, tenantID, workflowID, workflowName, sessionID, taskID string, recipientID string, recipientType events.RecipientType, nodeID, nodeName string, actionKey, actionID string, payload map[string]interface{}) error
+	PublishExitedFailed(ctx context.Context, tenantID, workflowID, workflowName, sessionID, taskID string, recipientID string, recipientType events.RecipientType, nodeID, nodeName string, actionKey, actionID string, errorMessage string) error
 	Close() error
 }
 
@@ -254,21 +254,19 @@ func (w *Workflow) listenTriggerMessages(ctx context.Context) error {
 				// Extract node information for worker
 				nodeID := dep.ID
 				nodeName := extractNodeName(&dep)
-				actionLabel := nodeName // Same as node name
 
 				err = w.messenger.SendInputMessage(ctx, InputMessage{
-					SessionID:   sessionID,
-					TaskID:      nextTaskID,
-					TenantID:    dep.TenantID,
-					WorkflowID:  dep.WorkflowID,
+					SessionID:  sessionID,
+					TaskID:     nextTaskID,
+					TenantID:   dep.TenantID,
+					WorkflowID: dep.WorkflowID,
 					// TODO
 					// WorkflowActionID: dep.ID,
-					NodeID:      nodeID,      // NEW
-					NodeName:    nodeName,    // NEW
-					Key:         dep.Key,
-					ActionID:    dep.ActionID,
-					ActionLabel: actionLabel, // NEW
-					Values:      string(nextInputb),
+					NodeID:   nodeID,
+					NodeName: nodeName,
+					Key:      dep.Key,
+					ActionID: dep.ActionID,
+					Values:   string(nextInputb),
 				})
 
 				if err != nil {
@@ -281,7 +279,6 @@ func (w *Workflow) listenTriggerMessages(ctx context.Context) error {
 					// Extract node information from workflow action
 					nodeID := dep.ID
 					nodeName := extractNodeName(&dep)
-					actionLabel := nodeName // Same as node name for backward compatibility
 
 					err = w.publisher.PublishEntered(
 						ctx,
@@ -296,7 +293,6 @@ func (w *Workflow) listenTriggerMessages(ctx context.Context) error {
 						nodeName,
 						dep.Key,
 						dep.ActionID,
-						actionLabel,
 					)
 					if err != nil {
 						slog.Error("failed to publish entered event", slog.String("error", err.Error()))
@@ -391,7 +387,6 @@ func (w *Workflow) listenOutputMessages(ctx context.Context) error {
 			// Extract node information from workflow action
 			nodeID := workflowAction.ID
 			nodeName := extractNodeName(workflowAction)
-			actionLabel := nodeName // Same as node name for backward compatibility
 
 			err = w.publisher.PublishExitedSuccess(
 				c.Context,
@@ -406,7 +401,6 @@ func (w *Workflow) listenOutputMessages(ctx context.Context) error {
 				nodeName,
 				m.Key,
 				workflowAction.ActionID,
-				actionLabel,
 				wvalues,
 			)
 			if err != nil {
@@ -480,21 +474,19 @@ func (w *Workflow) listenOutputMessages(ctx context.Context) error {
 				// Extract node information for worker
 				nodeID := dep.ID
 				nodeName := extractNodeName(&dep)
-				actionLabel := nodeName // Same as node name
 
 				err = w.messenger.SendInputMessage(ctx, InputMessage{
-					SessionID:   m.SessionID,
-					TaskID:      nextTaskID,
-					TenantID:    dep.TenantID,
-					WorkflowID:  dep.WorkflowID,
+					SessionID:  m.SessionID,
+					TaskID:     nextTaskID,
+					TenantID:   dep.TenantID,
+					WorkflowID: dep.WorkflowID,
 					// TODO
 					// WorkflowActionID: dep.ID,
-					NodeID:      nodeID,      // NEW
-					NodeName:    nodeName,    // NEW
-					Key:         dep.Key,
-					ActionID:    dep.ActionID,
-					ActionLabel: actionLabel, // NEW
-					Values:      string(nextInputb),
+					NodeID:   nodeID,
+					NodeName: nodeName,
+					Key:      dep.Key,
+					ActionID: dep.ActionID,
+					Values:   string(nextInputb),
 				})
 
 				if err != nil {
@@ -507,7 +499,6 @@ func (w *Workflow) listenOutputMessages(ctx context.Context) error {
 					// Extract node information from workflow action
 					nodeID := dep.ID
 					nodeName := extractNodeName(&dep)
-					actionLabel := nodeName // Same as node name for backward compatibility
 
 					err = w.publisher.PublishEntered(
 						ctx,
@@ -522,7 +513,6 @@ func (w *Workflow) listenOutputMessages(ctx context.Context) error {
 						nodeName,
 						dep.Key,
 						dep.ActionID,
-						actionLabel,
 					)
 					if err != nil {
 						slog.Error("failed to publish entered event", slog.String("error", err.Error()))
@@ -686,22 +676,7 @@ func extractRecipientInfoFromContext(ctx map[string]map[string]interface{}) (str
 }
 
 // extractNodeName extracts node display name from WorkflowAction
-// Priority: Meta["name"] > Config["label"] > Key (fallback)
+// Reads ONLY from the top-level NodeName field
 func extractNodeName(action *WorkflowAction) string {
-	// Try Meta["name"] first
-	if action.Meta != nil {
-		if name, ok := action.Meta["name"]; ok && name != "" {
-			return name
-		}
-	}
-
-	// Try Config["label"] second
-	if action.Config != nil {
-		if label, ok := action.Config["label"].(string); ok && label != "" {
-			return label
-		}
-	}
-
-	// Fallback to action key
-	return action.Key
+	return action.NodeName
 }

@@ -196,6 +196,23 @@ import "github.com/Rocket-Innovation/mca-engine-sdk/pkg/spider"
 
 ## Recent Changes (This Library)
 
+**v1.20.0 (2025-12-03):**
+- **ActionPublisher:** Added `PublishLinkOpened()` method for link click tracking
+- **Event Types:** New `link_opened` event type for tracking link interactions
+- **Documentation:** See `../mca-document/report/ACTION_EVENT_FLOW.md`
+
+**v1.19.0 (2025-12-03):**
+- **NatsInputMessage:** Added `NodeID`, `NodeName`, `ActionLabel` fields with JSON tags
+- **NATS Messaging:** `SendInputMessage()` now includes node tracking fields when marshaling to NATS
+- **Worker Context:** Workers now receive workflow node metadata for event tracking
+- **Breaking Change:** Services must update to v1.19.0+ to receive node tracking data
+
+**v1.18.0 (2025-12-02):**
+- **ActionPublisher:** Added `PublishSent()` and `PublishDelivered()` methods for action event tracking
+- **Event Tracking:** Support for `action_sent`, `action_delivered`, `action_failed` events
+- **Node Tracking:** Added `node_id` and `node_name` fields to ActionExecutionPayload
+- **Kafka Publishing:** Action events published to `mca.workflow.actions.{env}` topic
+
 **v1.3.31+ (2025-11-21):**
 - Execution history tracking support
 - Workflow deduplication integration

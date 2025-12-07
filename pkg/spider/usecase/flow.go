@@ -19,6 +19,7 @@ type CreateFlowRequest struct {
 type WorkflowActionInput struct {
 	Key      string                   `json:"key"`
 	ActionID string                   `json:"action_id"`
+	NodeName string                   `json:"node_name,omitempty"` // User-defined node name
 	Config   map[string]interface{}        `json:"config"`
 	Mapper   map[string]spider.Mapper `json:"mapper"`
 	Meta     map[string]string        `json:"meta,omitempty"`
