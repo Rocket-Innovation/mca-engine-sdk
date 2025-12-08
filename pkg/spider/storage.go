@@ -37,6 +37,7 @@ type AddActionRequest struct {
 	WorkflowID string            `json:"workflow_id"`
 	Key        string            `json:"key"`
 	ActionID   string            `json:"action_id"`
+	NodeName   string            `json:"node_name,omitempty"`
 	Config     map[string]interface{} `json:"config"`
 	Map        map[string]Mapper `json:"map"`
 	Meta       map[string]string `json:"meta,omitempty"`
@@ -46,6 +47,7 @@ type UpdateActionRequest struct {
 	TenantID   string            `json:"tenant_id"`
 	WorkflowID string            `json:"workflow_id"`
 	Key        string            `json:"key"`
+	NodeName   string            `json:"node_name,omitempty"`
 	Config     map[string]interface{} `json:"config"`
 	Map        map[string]Mapper `json:"map"`
 	Meta       map[string]string `json:"meta,omitempty"`

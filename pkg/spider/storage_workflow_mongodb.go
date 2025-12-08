@@ -148,6 +148,7 @@ func (w *MongodDBWorkflowStorageAdapter) AddAction(ctx context.Context, req *Add
 		TenantID:   req.TenantID,
 		WorkflowID: req.WorkflowID,
 		ActionID:   req.ActionID,
+		NodeName:   req.NodeName,
 		Config:     req.Config,
 		Map:        req.Map,
 		Meta:       req.Meta,
@@ -172,6 +173,7 @@ func (w *MongodDBWorkflowStorageAdapter) AddAction(ctx context.Context, req *Add
 		TenantID:   wa.TenantID,
 		WorkflowID: wa.WorkflowID,
 		ActionID:   wa.ActionID,
+		NodeName:   wa.NodeName,
 		Config:     wa.Config,
 		Map:        wa.Map,
 		Meta:       wa.Meta,
@@ -241,6 +243,7 @@ func (w *MongodDBWorkflowStorageAdapter) QueryWorkflowAction(ctx context.Context
 		TenantID:   wa.TenantID,
 		WorkflowID: wa.WorkflowID,
 		ActionID:   wa.ActionID,
+		NodeName:   wa.NodeName,
 		Config:     wa.Config,
 		Map:        wa.Map,
 		Meta:       wa.Meta,
@@ -557,6 +560,7 @@ func (w *MongodDBWorkflowStorageAdapter) GetWorkflowActions(ctx context.Context,
 			TenantID:   wa.TenantID,
 			WorkflowID: wa.WorkflowID,
 			ActionID:   wa.ActionID,
+			NodeName:   wa.NodeName,
 			Config:     wa.Config,
 			Map:        wa.Map,
 			Meta:       wa.Meta,
@@ -653,6 +657,7 @@ func (w *MongodDBWorkflowStorageAdapter) UpdateAction(ctx context.Context, req *
 		TenantID:   wa.TenantID,
 		WorkflowID: wa.WorkflowID,
 		ActionID:   wa.ActionID,
+		NodeName:   wa.NodeName,
 		Config:     wa.Config,
 		Map:        wa.Map,
 		Meta:       wa.Meta,
@@ -837,6 +842,7 @@ type MDWorkflowAction struct {
 	TenantID   string                 `bson:"tenant_id"`   // Composite unique index
 	WorkflowID string                 `bson:"workflow_id"` // Composite unique index
 	ActionID   string                 `bson:"action_id"`
+	NodeName   string                 `bson:"node_name,omitempty"` // User-defined node display name
 	Config     map[string]interface{} `bson:"config"`
 	Map        map[string]Mapper      `bson:"map"`
 	Meta       map[string]string      `bson:"meta,omitempty"`
